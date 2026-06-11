@@ -1,0 +1,240 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
+import { aggregateRating } from "@/lib/domain/ratings";
+import { isOpenNow, parseOpeningHours } from "@/lib/domain/hours";
+import { profileCompleteness, verificationScore } from "@/lib/domain/verification";
+import { summarizeReviews } from "@/lib/domain/reviewSummary";
+import Gallery from "@/components/Gallery";
+import RatingStars from "@/components/RatingStars";
+import { VerifiedBadge, FeaturedBadge, OpenNowBadge } from "@/components/Badges";
+import OpeningHoursTable from "@/components/OpeningHoursTable";
+import MapEmbed from "@/components/MapEmbed";
+import ReviewList from "@/components/ReviewList";
+import ReviewSummaryCard from "@/components/ReviewSummaryCard";
+import TrackedLink from "@/components/TrackedLink";
+import FavoriteButton from "@/components/FavoriteButton";
+import AdSlot from "@/components/AdSlot";
+import { CATEGORY_LABELS, CITY_LABELS, isCategory, isCity, type Category, type City } from "@/lib/types";
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+async function getBusiness(slug: string) {
+  return db.business.findUnique({
+    where: { slug },
+    include: {
+      photos: { orderBy: { sortOrder: "asc" } },
+      reviews: {
+        where: { status: "VISIBLE" },
+        orderBy: { createdAt: "desc" },
+        include: { user: { select: { name: true } } },
+      },
+    },
+  });
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const business = await getBusiness(slug);
+  if (!business || business.status !== "APPROVED") return {};
+  const cityLabel = isCity(business.city) ? CITY_LABELS[business.city as City] : business.city;
+  return {
+    title: `${business.name} — ${cityLabel}`,
+    description: business.description.slice(0, 160),
+    alternates: { canonical: `/business/${business.slug}` },
+    openGraph: { images: business.photos[0] ? [business.photos[0].url] : [] },
+  };
+}
+
+export default async function BusinessPage({ params }: Props) {
+  const { slug } = await params;
+  const [business, session] = await Promise.all([getBusiness(slug), getSession()]);
+  if (!business || business.status !== "APPROVED") notFound();
+
+  // record listing view (fire and forget)
+  void db.analyticsEvent.create({ data: { type: "LISTING_VIEW", businessId: business.id } }).catch(() => {});
+
+  const { avg, count } = aggregateRating(business.reviews);
+  const hours = parseOpeningHours(business.openingHours);
+  const openNow = isOpenNow(hours);
+  const score = verificationScore(
+    business.verificationLevel,
+    profileCompleteness({
+      description: business.description,
+      phone: business.phone,
+      website: business.website,
+      socials: business.socials,
+      openingHours: business.openingHours,
+      photoCount: business.photos.length,
+    })
+  );
+  const summary = summarizeReviews(business.reviews.map((r) => `${r.title}. ${r.body}`));
+  const categoryLabel = isCategory(business.category) ? CATEGORY_LABELS[business.category as Category] : business.category;
+  const cityLabel = isCity(business.city) ? CITY_LABELS[business.city as City] : business.city;
+
+  let socials: Record<string, string> = {};
+  try {
+    socials = JSON.parse(business.socials);
+  } catch {}
+
+  const [favorite, follow, myReview] = session
+    ? await Promise.all([
+        db.favorite.findUnique({ where: { userId_businessId: { userId: session.userId, businessId: business.id } } }),
+        db.follow.findUnique({ where: { userId_businessId: { userId: session.userId, businessId: business.id } } }),
+        db.review.findUnique({ where: { businessId_userId: { businessId: business.id, userId: session.userId } } }),
+      ])
+    : [null, null, null];
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: business.name,
+    description: business.description,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: business.address,
+      addressLocality: cityLabel,
+      postalCode: business.postcode,
+      addressCountry: "GB",
+    },
+    telephone: business.phone || undefined,
+    url: business.website || undefined,
+    image: business.photos.map((p) => p.url),
+    ...(count > 0 && {
+      aggregateRating: { "@type": "AggregateRating", ratingValue: avg, reviewCount: count },
+      review: business.reviews.slice(0, 5).map((r) => ({
+        "@type": "Review",
+        reviewRating: { "@type": "Rating", ratingValue: r.rating },
+        author: { "@type": "Person", name: r.user.name },
+        reviewBody: r.body,
+      })),
+    }),
+  };
+
+  return (
+    <main className="mx-auto max-w-6xl px-4 py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <nav className="mb-4 text-sm text-neutral-400">
+        <Link href="/" className="hover:text-emerald-700">Home</Link>
+        {" / "}
+        {isCategory(business.category) && isCity(business.city) ? (
+          <Link href={`/${business.category}/${business.city}`} className="hover:text-emerald-700">
+            {categoryLabel} in {cityLabel}
+          </Link>
+        ) : (
+          <span>{categoryLabel}</span>
+        )}
+        {" / "}
+        <span className="text-neutral-600">{business.name}</span>
+      </nav>
+
+      <Gallery photos={business.photos} name={business.name} />
+
+      <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            {business.featured && <FeaturedBadge />}
+            <VerifiedBadge score={score} level={business.verificationLevel} />
+            <OpenNowBadge open={openNow} />
+          </div>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">{business.name}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-neutral-500">
+            <RatingStars rating={avg} count={count} size="lg" />
+            <span>·</span>
+            <span>{categoryLabel}</span>
+            <span>·</span>
+            <span>📍 {business.address}, {cityLabel} {business.postcode}</span>
+          </div>
+
+          <p className="mt-5 max-w-2xl leading-relaxed text-neutral-700">{business.description}</p>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            <FavoriteButton businessId={business.id} kind="favorite" initial={!!favorite} signedIn={!!session} />
+            <FavoriteButton businessId={business.id} kind="follow" initial={!!follow} signedIn={!!session} />
+            {!myReview && (
+              <Link
+                href={session ? `/business/${business.slug}/review` : `/auth/signin?next=/business/${business.slug}/review`}
+                className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+              >
+                ✍ Write a review
+              </Link>
+            )}
+          </div>
+
+          {!business.ownerId && (
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm text-amber-800">
+                <span className="font-semibold">Is this your business?</span> Claim it to respond to reviews, update details and get verified.
+              </p>
+              <Link href={`/claim/${business.slug}`} className="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+                Claim this listing
+              </Link>
+            </div>
+          )}
+
+          <section className="mt-10">
+            <h2 className="text-xl font-bold tracking-tight">Reviews</h2>
+            <div className="mt-4 space-y-5">
+              <ReviewSummaryCard loves={summary.loves} dislikes={summary.dislikes} />
+              <ReviewList
+                reviews={business.reviews.map((r) => ({
+                  id: r.id,
+                  rating: r.rating,
+                  title: r.title,
+                  body: r.body,
+                  createdAt: r.createdAt,
+                  userName: r.user.name,
+                  ownerResponse: r.ownerResponse,
+                }))}
+              />
+            </div>
+          </section>
+        </div>
+
+        <aside className="space-y-5">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5">
+            <h2 className="text-sm font-semibold text-neutral-900">Contact</h2>
+            <div className="mt-3 space-y-2.5 text-sm">
+              {business.phone && (
+                <TrackedLink href={`tel:${business.phone.replace(/\s/g, "")}`} type="PHONE_CLICK" businessId={business.id} className="flex items-center gap-2 font-medium text-emerald-700 hover:underline">
+                  📞 {business.phone}
+                </TrackedLink>
+              )}
+              {business.website && (
+                <TrackedLink href={business.website} type="WEBSITE_CLICK" businessId={business.id} className="flex items-center gap-2 font-medium text-emerald-700 hover:underline">
+                  🌐 Visit website
+                </TrackedLink>
+              )}
+              {Object.entries(socials).map(([k, v]) => (
+                <a key={k} href={v} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 capitalize text-neutral-500 hover:text-emerald-700">
+                  🔗 {k}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-neutral-900">Opening hours</h2>
+              <OpenNowBadge open={openNow} />
+            </div>
+            <div className="mt-3">
+              <OpeningHoursTable hours={hours} />
+            </div>
+          </div>
+
+          {business.lat && business.lng && (
+            <MapEmbed lat={business.lat} lng={business.lng} name={business.name} />
+          )}
+
+          <AdSlot placement="BUSINESS_DETAIL" />
+        </aside>
+      </div>
+    </main>
+  );
+}
