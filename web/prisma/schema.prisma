@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  // comma-separated roles: USER,BUSINESS_OWNER,EVENT_ORGANIZER,ADMIN
+  roles        String   @default("USER")
+  createdAt    DateTime @default(now())
+
+  businesses    Business[]
+  reviews       Review[]
+  favorites     Favorite[]
+  follows       Follow[]
+  events        Event[]
+  claimRequests ClaimRequest[]
+}
+
+model Business {
+  id                String    @id @default(cuid())
+  name              String
+  slug              String    @unique
+  category          String
+  description       String    @default("")
+  address           String    @default("")
+  city              String
+  postcode          String    @default("")
+  lat               Float?
+  lng               Float?
+  phone             String    @default("")
+  website           String    @default("")
+  socials           String    @default("{}") // JSON {instagram, facebook, tiktok}
+  openingHours      String    @default("{}") // JSON {mon:[{open,close}],...}
+  verificationLevel Int       @default(0) // 0-4
+  featured          Boolean   @default(false)
+  plan              String    @default("FREE") // FREE | VERIFIED | FEATURED
+  status            String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  ownerId           String?
+  claimedAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  owner           User?            @relation(fields: [ownerId], references: [id])
+  photos          BusinessPhoto[]
+  reviews         Review[]
+  favorites       Favorite[]
+  follows         Follow[]
+  claimRequests   ClaimRequest[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([category, city, status])
+}
+
+model BusinessPhoto {
+  id         String @id @default(cuid())
+  businessId String
+  url        String
+  alt        String @default("")
+  sortOrder  Int    @default(0)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id               String    @id @default(cuid())
+  businessId       String
+  userId           String
+  rating           Int
+  title            String    @default("")
+  body             String
+  status           String    @default("VISIBLE") // VISIBLE | REMOVED
+  ownerResponse    String?
+  ownerRespondedAt DateTime?
+  createdAt        DateTime  @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  businessId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+}
+
+model Follow {
+  id         String   @id @default(cuid())
+  userId     String
+  businessId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  type        String
+  description String   @default("")
+  imageUrl    String   @default("")
+  startsAt    DateTime
+  endsAt      DateTime?
+  venueName   String   @default("")
+  address     String   @default("")
+  city        String
+  lat         Float?
+  lng         Float?
+  ticketUrl   String   @default("")
+  priceFrom   Float?
+  organizerId String
+  status      String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  featured    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  organizer       User             @relation(fields: [organizerId], references: [id])
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([city, status, startsAt])
+}
+
+model ClaimRequest {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String
+  method     String // EMAIL | PHONE
+  code       String
+  status     String   @default("PENDING") // PENDING | VERIFIED | REJECTED
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  type       String // LISTING_VIEW | PHONE_CLICK | WEBSITE_CLICK | EVENT_VIEW | TICKET_CLICK | SEARCH_IMPRESSION
+  businessId String?
+  eventId    String?
+  createdAt  DateTime @default(now())
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  event    Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([type, businessId, createdAt])
+  @@index([type, eventId, createdAt])
+}
+
+model Ad {
+  id        String   @id @default(cuid())
+  placement String // HOME_HERO | SEARCH_RESULTS | BUSINESS_DETAIL | EVENT_DETAIL
+  imageUrl  String   @default("")
+  headline  String
+  body      String   @default("")
+  targetUrl String
+  active    Boolean  @default(true)
+  startsAt  DateTime @default(now())
+  endsAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([placement, active])
+}
