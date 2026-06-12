@@ -23,6 +23,9 @@ export default async function AdminPage() {
     { href: "/admin/events", title: "Events", desc: "Approve and feature community events", badge: pendingEvents },
     { href: "/admin/reviews", title: "Reviews", desc: "Moderate abusive or fake reviews", badge: 0 },
     { href: "/admin/ads", title: "Advertising", desc: "Manage banner campaigns across all placements", badge: 0 },
+    { href: "/admin/import/google-places", title: "Import — Google Places", desc: "Import real trading businesses into the approval queue", badge: 0 },
+    { href: "/admin/import/companies-house", title: "Import — Companies House", desc: "Verify listings against official UK company records", badge: 0 },
+    { href: "/admin/data-quality", title: "Data Quality", desc: "Source coverage, missing fields, duplicates and flagged listings", badge: 0 },
   ];
 
   return (
