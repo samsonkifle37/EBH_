@@ -42,9 +42,36 @@ No accounts or API keys needed — everything runs locally.
 ## Stack
 
 Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Prisma 6 + SQLite ·
-jose cookie sessions + bcryptjs · Zod · Vitest (30 unit tests: `npm test`).
+jose cookie sessions + bcryptjs · Zod · Vitest (40 unit tests: `npm test`).
 
-## Activating real integrations (optional)
+## Real data & importers
+
+The platform only publishes **real, source-tracked, admin-approved** listings.
+Every listing records `sourceType` (google_places / companies_house /
+owner_submitted / admin_created / demo), source id + URL, and a
+`BusinessSource` evidence row. Imports always land in the **pending approval
+queue** — nothing auto-publishes.
+
+- **`ALLOW_DEMO_DATA`** (`web/.env`) — the 31 seeded demo businesses and 12
+  demo events are flagged `demo` and only visible when this is `"true"`
+  (local default). **Production must set `"false"`**: demo listings then 404,
+  vanish from search/home/sitemap/SEO pages, and category pages show
+  "No verified businesses listed yet."
+- **`GOOGLE_PLACES_API_KEY`** — enables `/admin/import/google-places`
+  (preset queries like "Ethiopian restaurant London"). Imports real trading
+  businesses with Google rating/review-count (linked to Google Maps — review
+  text is never copied; missing rating shows "No rating yet"). Requires a
+  billing-enabled Google Cloud project with Places API (New).
+- **`COMPANIES_HOUSE_API_KEY`** (free) — enables `/admin/import/companies-house`
+  (name terms like "Habesha", "Abyssinia"). Matches corroborate existing
+  listings (+15 trust, "CH ✓"); unmatched companies import as pending only.
+- **Dedup & merge** — importers match on place id, company number, phone,
+  website and name+postcode; admins can merge duplicates, reassign
+  category/city, and monitor everything at `/admin/data-quality`.
+- **Trust Score (0–100, evidence only)**: +30 Google Place · +20 phone ·
+  +20 website · +15 Companies House match · +10 owner claimed · +5 photos.
+
+## Activating other integrations (optional)
 
 Edit `web/.env`:
 
@@ -72,6 +99,8 @@ web/                Next.js app
 
 ## Verification & trust model
 
-Levels: 1 email-verified · 2 phone-verified · 3 business-verified · 4 premium.
-Public trust score (0–100) = level × 20 + profile completeness × 20
-(description, phone, website, socials, hours, 3+ photos).
+Levels: 1 email-verified · 2 phone-verified · 3 business-verified · 4 premium
+(shown as badges). The public **Trust Score (0–100)** is evidence-based, never
+invented: +30 Google Place exists · +20 phone · +20 website · +15 Companies
+House match · +10 owner claimed · +5 photos. Displayed on every listing as
+"Trust Score: N/100 · Based on verified public data".
