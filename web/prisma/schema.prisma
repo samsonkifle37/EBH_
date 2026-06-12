@@ -47,6 +47,17 @@ model Business {
   claimedAt         DateTime?
   createdAt         DateTime  @default(now())
 
+  // --- source tracking (real-data upgrade) ---
+  sourceType          String    @default("admin_created") // google_places | companies_house | owner_submitted | admin_created | demo
+  sourceId            String    @default("")
+  sourceUrl           String    @default("")
+  lastSourceCheckedAt DateTime?
+  dataConfidenceScore Int       @default(0) // 0-100, evidence-based
+  googleRating        Float?
+  googleReviewCount   Int?
+  mapsUrl             String    @default("")
+  companyNumber       String    @default("")
+
   owner           User?            @relation(fields: [ownerId], references: [id])
   photos          BusinessPhoto[]
   reviews         Review[]
@@ -54,8 +65,24 @@ model Business {
   follows         Follow[]
   claimRequests   ClaimRequest[]
   analyticsEvents AnalyticsEvent[]
+  sources         BusinessSource[]
 
   @@index([category, city, status])
+  @@index([sourceType, status])
+}
+
+model BusinessSource {
+  id         String   @id @default(cuid())
+  businessId String
+  sourceType String // google_places | companies_house | owner_submitted | admin_created | demo
+  sourceId   String // place id, company number, submission id
+  sourceUrl  String   @default("")
+  rawData    String   @default("{}") // JSON snapshot from the source API
+  fetchedAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId])
 }
 
 model BusinessPhoto {
@@ -131,10 +158,40 @@ model Event {
   featured    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
+  // --- source tracking (real-data upgrade) ---
+  sourceType String @default("admin_created") // owner_submitted | admin_created | demo
+  sourceUrl  String @default("")
+
   organizer       User             @relation(fields: [organizerId], references: [id])
   analyticsEvents AnalyticsEvent[]
+  sources         EventSource[]
 
   @@index([city, status, startsAt])
+  @@index([sourceType, status])
+}
+
+model EventSource {
+  id         String   @id @default(cuid())
+  eventId    String
+  sourceType String // owner_submitted | admin_created | demo
+  sourceId   String   @default("")
+  sourceUrl  String   @default("")
+  createdAt  DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model ImportJob {
+  id         String    @id @default(cuid())
+  type       String // google_places | companies_house
+  query      String
+  status     String    @default("running") // running | completed | failed
+  found      Int       @default(0)
+  imported   Int       @default(0)
+  duplicates Int       @default(0)
+  errors     String    @default("")
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
 }
 
 model ClaimRequest {

@@ -169,6 +169,7 @@ const OWNER_RESPONSES = [
 
 async function main() {
   console.log("Clearing existing data...");
+  await db.importJob.deleteMany();
   await db.analyticsEvent.deleteMany();
   await db.ad.deleteMany();
   await db.claimRequest.deleteMany();
@@ -228,12 +229,17 @@ async function main() {
         status: b.status ?? "APPROVED",
         ownerId: b.owned ? owner.id : null,
         claimedAt: b.owned ? new Date("2026-01-15") : null,
+        sourceType: "demo",
+        sourceId: `demo-${slug}`,
         photos: {
           create: Array.from({ length: photoCount }, (_, i) => ({
             url: photoUrl(`${slug}-${i + 1}`),
             alt: `${b.name} photo ${i + 1}`,
             sortOrder: i,
           })),
+        },
+        sources: {
+          create: [{ sourceType: "demo", sourceId: `demo-${slug}`, rawData: "{}" }],
         },
       },
     });
@@ -297,6 +303,10 @@ async function main() {
         organizerId: organizer.id,
         status: e.status ?? "APPROVED",
         featured: e.featured ?? false,
+        sourceType: "demo",
+        sources: {
+          create: [{ sourceType: "demo", sourceId: `demo-${slug}` }],
+        },
       },
     });
   }
