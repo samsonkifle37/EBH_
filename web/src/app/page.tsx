@@ -87,18 +87,20 @@ export default async function HomePage() {
       </section>
 
       {/* Featured businesses */}
-      <section className="mx-auto max-w-6xl px-4 py-12">
-        <SectionHeading
-          title="Featured Businesses"
-          subtitle="Trusted and verified partners across the UK"
-          href="/businesses"
-        />
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((b) => (
-            <BusinessCard key={b.id} business={b} />
-          ))}
-        </div>
-      </section>
+      {featured.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 py-12">
+          <SectionHeading
+            title="Featured Businesses"
+            subtitle="Trusted and verified partners across the UK"
+            href="/businesses"
+          />
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((b) => (
+              <BusinessCard key={b.id} business={b} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* AI concierge teaser */}
       <section className="mx-auto max-w-6xl px-4 py-6">
@@ -120,14 +122,16 @@ export default async function HomePage() {
       </section>
 
       {/* Upcoming events */}
-      <section className="mx-auto max-w-6xl px-4 py-12">
-        <SectionHeading title="Upcoming Events" subtitle="Concerts, culture, business and community" href="/events" />
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {events.map((e) => (
-            <EventCard key={e.id} event={e} />
-          ))}
-        </div>
-      </section>
+      {events.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 py-12">
+          <SectionHeading title="Upcoming Events" subtitle="Concerts, culture, business and community" href="/events" />
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {events.map((e) => (
+              <EventCard key={e.id} event={e} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Browse categories */}
       <section className="mx-auto max-w-6xl px-4 py-6">
