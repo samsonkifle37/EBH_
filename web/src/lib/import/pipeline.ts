@@ -54,7 +54,38 @@ async function uniqueSlug(name: string): Promise<string> {
   }
 }
 
+/**
+ * Hard monthly budget for Google searches so usage stays far inside the
+ * free tier (1,000 Enterprise text searches/month). Each import run = 1 search.
+ */
+async function assertGoogleBudget(): Promise<void> {
+  const cap = parseInt(process.env.GOOGLE_IMPORT_MONTHLY_CAP ?? "50", 10);
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const used = await db.importJob.count({
+    where: { type: "google_places", startedAt: { gte: monthStart }, errors: { not: { contains: "monthly Google import cap" } } },
+  });
+  if (used >= cap) {
+    throw new Error(
+      `Stopped: monthly Google import cap reached (${used}/${cap} searches this month). ` +
+        `This cap keeps usage far below Google's 1,000 free searches/month so nothing can be charged. ` +
+        `Raise GOOGLE_IMPORT_MONTHLY_CAP in web/.env if you need more.`
+    );
+  }
+}
+
 export async function runImport(type: ImportType, query: string): Promise<ImportResult> {
+  if (type === "google_places") {
+    try {
+      await assertGoogleBudget();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      const blocked = await db.importJob.create({
+        data: { type, query, status: "failed", errors: message, finishedAt: new Date() },
+      });
+      return { jobId: blocked.id, status: "failed", found: 0, imported: 0, duplicates: 0, errors: message };
+    }
+  }
   const job = await db.importJob.create({ data: { type, query } });
   let found = 0;
   let imported = 0;
