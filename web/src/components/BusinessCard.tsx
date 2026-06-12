@@ -33,7 +33,13 @@ export default function BusinessCard({ business }: { business: BusinessSummary }
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold leading-snug text-neutral-900 group-hover:text-emerald-800">{business.name}</h3>
         </div>
-        <RatingStars rating={business.avg} count={business.count} />
+        {business.count > 0 ? (
+          <RatingStars rating={business.avg} count={business.count} />
+        ) : business.googleRating != null ? (
+          <p className="text-sm text-neutral-500">⭐ {business.googleRating.toFixed(1)} on Google ({business.googleReviewCount ?? 0})</p>
+        ) : (
+          <p className="text-sm text-neutral-400">No rating yet</p>
+        )}
         <div className="flex flex-wrap items-center gap-1.5">
           <VerifiedBadge score={business.verificationScore} level={business.verificationLevel} />
           <OpenNowBadge open={business.openNow} />

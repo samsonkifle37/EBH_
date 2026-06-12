@@ -35,6 +35,16 @@ export async function POST(req: Request) {
       imageUrl: d.imageUrl,
       organizerId: session.userId,
       status: "PENDING",
+      sourceType: session.roles.includes("ADMIN") ? "admin_created" : "owner_submitted",
+      sources: {
+        create: [
+          {
+            sourceType: session.roles.includes("ADMIN") ? "admin_created" : "owner_submitted",
+            sourceId: `submission-${session.userId}`,
+            sourceUrl: d.ticketUrl,
+          },
+        ],
+      },
     },
   });
 

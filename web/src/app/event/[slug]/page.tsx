@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { allowDemoData } from "@/lib/flags";
 import MapEmbed from "@/components/MapEmbed";
 import TrackedLink from "@/components/TrackedLink";
 import AdSlot from "@/components/AdSlot";
@@ -37,6 +38,7 @@ export default async function EventPage({ params }: Props) {
   const { slug } = await params;
   const event = await getEvent(slug);
   if (!event || event.status !== "APPROVED") notFound();
+  if (event.sourceType === "demo" && !allowDemoData()) notFound();
 
   void db.analyticsEvent.create({ data: { type: "EVENT_VIEW", eventId: event.id } }).catch(() => {});
 

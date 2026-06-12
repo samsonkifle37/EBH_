@@ -41,7 +41,12 @@ export async function POST(req: Request) {
       status: "PENDING",
       ownerId: session.userId,
       claimedAt: new Date(),
+      sourceType: "owner_submitted",
+      sourceId: `submission-${session.userId}-${slug}`,
       photos: { create: d.photoUrls.map((url, i) => ({ url, sortOrder: i })) },
+      sources: {
+        create: [{ sourceType: "owner_submitted", sourceId: `submission-${session.userId}-${slug}` }],
+      },
     },
   });
 

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
+import { demoFilter } from "@/lib/flags";
 import { CATEGORIES, CITIES } from "@/lib/types";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -23,8 +24,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   const [businesses, events] = await Promise.all([
-    db.business.findMany({ where: { status: "APPROVED" }, select: { slug: true } }),
-    db.event.findMany({ where: { status: "APPROVED" }, select: { slug: true } }),
+    db.business.findMany({ where: { status: "APPROVED", ...demoFilter() }, select: { slug: true } }),
+    db.event.findMany({ where: { status: "APPROVED", ...demoFilter() }, select: { slug: true } }),
   ]);
 
   return [

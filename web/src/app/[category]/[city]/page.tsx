@@ -81,8 +81,8 @@ export default async function CategoryCityPage({ params }: Props) {
       {results.length === 0 ? (
         <div className="mt-8">
           <EmptyState
-            title={`No ${categoryLabel.toLowerCase()} listed in ${cityLabel} yet`}
-            hint="Own one? List your business free and be the first."
+            title="No verified businesses listed yet."
+            hint="Are you a business owner? List your business and be the first verified listing here."
           />
         </div>
       ) : (

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { db } from "@/lib/db";
 import { getFeaturedBusinesses } from "@/lib/queries/businesses";
+import { getUpcomingEvents } from "@/lib/queries/events";
 import BusinessCard from "@/components/BusinessCard";
 import EventCard from "@/components/EventCard";
 import AdSlot from "@/components/AdSlot";
@@ -29,11 +29,7 @@ const QUICK_CATEGORIES = [
 export default async function HomePage() {
   const [featured, events] = await Promise.all([
     getFeaturedBusinesses(6),
-    db.event.findMany({
-      where: { status: "APPROVED", startsAt: { gte: new Date() } },
-      orderBy: { startsAt: "asc" },
-      take: 3,
-    }),
+    getUpcomingEvents({ limit: 3 }),
   ]);
 
   const orgJsonLd = {
