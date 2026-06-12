@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { aggregateRating } from "@/lib/domain/ratings";
 import { isOpenNow, parseOpeningHours } from "@/lib/domain/hours";
-import { profileCompleteness, verificationScore } from "@/lib/domain/verification";
+import { trustScoreForBusiness } from "@/lib/domain/trust";
+import { demoFilter } from "@/lib/flags";
 import type { Business, BusinessPhoto, Review } from "@prisma/client";
 
 export interface BusinessSummary {
@@ -15,24 +16,18 @@ export interface BusinessSummary {
   avg: number;
   count: number;
   verificationLevel: number;
-  verificationScore: number;
+  verificationScore: number; // evidence-based trust score 0-100
   featured: boolean;
   openNow: boolean;
   description: string;
+  googleRating: number | null;
+  googleReviewCount: number | null;
 }
 
 type BusinessWithRels = Business & { photos: BusinessPhoto[]; reviews: Pick<Review, "rating" | "status">[] };
 
 export function toSummary(b: BusinessWithRels, now: Date = new Date()): BusinessSummary {
   const { avg, count } = aggregateRating(b.reviews);
-  const completeness = profileCompleteness({
-    description: b.description,
-    phone: b.phone,
-    website: b.website,
-    socials: b.socials,
-    openingHours: b.openingHours,
-    photoCount: b.photos.length,
-  });
   return {
     id: b.id,
     name: b.name,
@@ -44,10 +39,19 @@ export function toSummary(b: BusinessWithRels, now: Date = new Date()): Business
     avg,
     count,
     verificationLevel: b.verificationLevel,
-    verificationScore: verificationScore(b.verificationLevel, completeness),
+    verificationScore: trustScoreForBusiness({
+      phone: b.phone,
+      website: b.website,
+      companyNumber: b.companyNumber,
+      ownerId: b.ownerId,
+      photoCount: b.photos.length,
+      hasGoogleSource: b.sourceType === "google_places" || b.mapsUrl.length > 0,
+    }),
     featured: b.featured,
     openNow: isOpenNow(parseOpeningHours(b.openingHours), now),
     description: b.description,
+    googleRating: b.googleRating,
+    googleReviewCount: b.googleReviewCount,
   };
 }
 
@@ -62,7 +66,7 @@ export interface SearchParams {
 }
 
 export async function searchBusinesses(params: SearchParams): Promise<BusinessSummary[]> {
-  const where: Record<string, unknown> = { status: "APPROVED" };
+  const where: Record<string, unknown> = { status: "APPROVED", ...demoFilter() };
   if (params.category) where.category = params.category;
   if (params.city) where.city = params.city;
   if (params.verifiedOnly) where.verificationLevel = { gte: 1 };
@@ -93,7 +97,7 @@ export async function searchBusinesses(params: SearchParams): Promise<BusinessSu
 
 export async function getFeaturedBusinesses(limit = 6): Promise<BusinessSummary[]> {
   const rows = await db.business.findMany({
-    where: { status: "APPROVED", featured: true },
+    where: { status: "APPROVED", featured: true, ...demoFilter() },
     include: {
       photos: { orderBy: { sortOrder: "asc" }, take: 1 },
       reviews: { select: { rating: true, status: true } },

@@ -5,8 +5,9 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { aggregateRating } from "@/lib/domain/ratings";
 import { isOpenNow, parseOpeningHours } from "@/lib/domain/hours";
-import { profileCompleteness, verificationScore } from "@/lib/domain/verification";
+import { trustScoreForBusiness } from "@/lib/domain/trust";
 import { summarizeReviews } from "@/lib/domain/reviewSummary";
+import { allowDemoData } from "@/lib/flags";
 import Gallery from "@/components/Gallery";
 import RatingStars from "@/components/RatingStars";
 import { VerifiedBadge, FeaturedBadge, OpenNowBadge } from "@/components/Badges";
@@ -54,6 +55,7 @@ export default async function BusinessPage({ params }: Props) {
   const { slug } = await params;
   const [business, session] = await Promise.all([getBusiness(slug), getSession()]);
   if (!business || business.status !== "APPROVED") notFound();
+  if (business.sourceType === "demo" && !allowDemoData()) notFound();
 
   // record listing view (fire and forget)
   void db.analyticsEvent.create({ data: { type: "LISTING_VIEW", businessId: business.id } }).catch(() => {});
@@ -61,17 +63,14 @@ export default async function BusinessPage({ params }: Props) {
   const { avg, count } = aggregateRating(business.reviews);
   const hours = parseOpeningHours(business.openingHours);
   const openNow = isOpenNow(hours);
-  const score = verificationScore(
-    business.verificationLevel,
-    profileCompleteness({
-      description: business.description,
-      phone: business.phone,
-      website: business.website,
-      socials: business.socials,
-      openingHours: business.openingHours,
-      photoCount: business.photos.length,
-    })
-  );
+  const score = trustScoreForBusiness({
+    phone: business.phone,
+    website: business.website,
+    companyNumber: business.companyNumber,
+    ownerId: business.ownerId,
+    photoCount: business.photos.length,
+    hasGoogleSource: business.sourceType === "google_places" || business.mapsUrl.length > 0,
+  });
   const summary = summarizeReviews(business.reviews.map((r) => `${r.title}. ${r.body}`));
   const categoryLabel = isCategory(business.category) ? CATEGORY_LABELS[business.category as Category] : business.category;
   const cityLabel = isCity(business.city) ? CITY_LABELS[business.city as City] : business.city;
@@ -144,12 +143,30 @@ export default async function BusinessPage({ params }: Props) {
           </div>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">{business.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-neutral-500">
-            <RatingStars rating={avg} count={count} size="lg" />
+            {count > 0 ? (
+              <RatingStars rating={avg} count={count} size="lg" />
+            ) : business.googleRating == null ? (
+              <span className="font-medium text-neutral-400">No rating yet</span>
+            ) : null}
+            {business.googleRating != null && (
+              <a
+                href={business.mapsUrl || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-neutral-600 hover:text-emerald-700"
+              >
+                ⭐ {business.googleRating.toFixed(1)} on Google ({business.googleReviewCount ?? 0})
+              </a>
+            )}
             <span>·</span>
             <span>{categoryLabel}</span>
             <span>·</span>
             <span>📍 {business.address}, {cityLabel} {business.postcode}</span>
           </div>
+
+          <p className="mt-2 text-xs font-medium text-neutral-400">
+            Trust Score: {score}/100 · Based on verified public data
+          </p>
 
           <p className="mt-5 max-w-2xl leading-relaxed text-neutral-700">{business.description}</p>
 
@@ -169,7 +186,7 @@ export default async function BusinessPage({ params }: Props) {
           {!business.ownerId && (
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
               <p className="text-sm text-amber-800">
-                <span className="font-semibold">Is this your business?</span> Claim it to respond to reviews, update details and get verified.
+                <span className="font-semibold">Own this business?</span> Claim this listing from £2.99/month — respond to reviews, update details and get verified.
               </p>
               <Link href={`/claim/${business.slug}`} className="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
                 Claim this listing
@@ -180,6 +197,11 @@ export default async function BusinessPage({ params }: Props) {
           <section className="mt-10">
             <h2 className="text-xl font-bold tracking-tight">Reviews</h2>
             <div className="mt-4 space-y-5">
+              {business.reviews.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-500">
+                  No reviews yet. Be the first to review.
+                </p>
+              )}
               <ReviewSummaryCard loves={summary.loves} dislikes={summary.dislikes} />
               <ReviewList
                 reviews={business.reviews.map((r) => ({
