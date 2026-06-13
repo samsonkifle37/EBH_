@@ -3,7 +3,16 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 
 const schema = z.object({
-  type: z.enum(["LISTING_VIEW", "PHONE_CLICK", "WEBSITE_CLICK", "EVENT_VIEW", "TICKET_CLICK"]),
+  type: z.enum([
+    "LISTING_VIEW",
+    "PHONE_CLICK",
+    "WEBSITE_CLICK",
+    "DIRECTION_CLICK",
+    "SHARE_CLICK",
+    "BOOKING_CLICK",
+    "EVENT_VIEW",
+    "TICKET_CLICK",
+  ]),
   businessId: z.string().optional(),
   eventId: z.string().optional(),
 });

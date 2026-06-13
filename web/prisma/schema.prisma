@@ -73,6 +73,7 @@ model Business {
   claimRequests   ClaimRequest[]
   analyticsEvents AnalyticsEvent[]
   sources         BusinessSource[]
+  analyticsDaily  BusinessAnalyticsDaily[]
 
   @@index([category, city, status])
   @@index([sourceType, status])
@@ -186,6 +187,24 @@ model EventSource {
   createdAt  DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model BusinessAnalyticsDaily {
+  id              String   @id @default(cuid())
+  businessId      String
+  date            String // YYYY-MM-DD (local)
+  views           Int      @default(0)
+  phoneClicks     Int      @default(0)
+  websiteClicks   Int      @default(0)
+  directionClicks Int      @default(0)
+  shareClicks     Int      @default(0)
+  bookingClicks   Int      @default(0)
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, date])
+  @@index([businessId, date])
 }
 
 model ImportJob {

@@ -3,14 +3,27 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { aggregateRating } from "@/lib/domain/ratings";
+import { rollupDaily } from "@/lib/analytics/rollup";
+import { getBusinessAnalytics } from "@/lib/analytics/summary";
 import AnalyticsCards from "@/components/AnalyticsCards";
+import TrendChart from "@/components/TrendChart";
 import RatingStars from "@/components/RatingStars";
 import RespondForm from "@/components/RespondForm";
 
 export const metadata = { title: "Listing Analytics" };
 
-export default async function BusinessAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
+const PERIODS = [7, 30, 90] as const;
+
+export default async function BusinessAnalyticsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ days?: string }>;
+}) {
   const { id } = await params;
+  const { days: daysParam } = await searchParams;
+  const days = PERIODS.includes(Number(daysParam) as (typeof PERIODS)[number]) ? Number(daysParam) : 30;
   const session = await getSession();
   if (!session) redirect("/auth/signin?next=/dashboard");
 
@@ -22,13 +35,9 @@ export default async function BusinessAnalyticsPage({ params }: { params: Promis
   });
   if (!business || business.ownerId !== session.userId) notFound();
 
-  const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
-  const [views, phoneClicks, websiteClicks, impressions] = await Promise.all([
-    db.analyticsEvent.count({ where: { businessId: id, type: "LISTING_VIEW", createdAt: { gte: since } } }),
-    db.analyticsEvent.count({ where: { businessId: id, type: "PHONE_CLICK", createdAt: { gte: since } } }),
-    db.analyticsEvent.count({ where: { businessId: id, type: "WEBSITE_CLICK", createdAt: { gte: since } } }),
-    db.analyticsEvent.count({ where: { businessId: id, type: "SEARCH_IMPRESSION", createdAt: { gte: since } } }),
-  ]);
+  // keep this business's daily rollup fresh, then read the summary
+  await rollupDaily({ businessId: id });
+  const analytics = await getBusinessAnalytics(id, days);
   const { avg, count } = aggregateRating(business.reviews);
 
   return (
@@ -46,18 +55,61 @@ export default async function BusinessAnalyticsPage({ params }: { params: Promis
       </div>
 
       <section className="mt-8">
-        <h2 className="text-lg font-bold">Last 30 days</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-bold">Performance</h2>
+          <div className="flex gap-1.5">
+            {PERIODS.map((p) => (
+              <Link
+                key={p}
+                href={`/dashboard/business/${id}?days=${p}`}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${days === p ? "bg-emerald-700 text-white" : "border border-neutral-300 text-neutral-600 hover:border-emerald-600 hover:text-emerald-700"}`}
+              >
+                {p} days
+              </Link>
+            ))}
+          </div>
+        </div>
         <div className="mt-4">
           <AnalyticsCards
             stats={[
-              { label: "Listing views", value: views },
-              { label: "Phone clicks", value: phoneClicks },
-              { label: "Website clicks", value: websiteClicks },
-              { label: "Search impressions", value: impressions },
+              { label: "Listing views", value: analytics.totals.views },
+              { label: "Phone clicks", value: analytics.totals.phoneClicks },
+              { label: "Website clicks", value: analytics.totals.websiteClicks },
+              { label: "Directions", value: analytics.totals.directionClicks },
+              { label: "Shares", value: analytics.totals.shareClicks },
               { label: "Reviews", value: count, hint: avg > 0 ? `${avg.toFixed(1)}★ average` : undefined },
             ]}
           />
         </div>
+
+        <div className="mt-5">
+          <TrendChart label={`Listing views — last ${days} days`} values={analytics.series.map((p) => p.views)} />
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-neutral-200 bg-white p-5">
+          <h3 className="text-sm font-bold text-neutral-700">Top interactions</h3>
+          {analytics.topSources.length === 0 ? (
+            <p className="mt-2 text-sm text-neutral-400">No clicks yet in this period.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {analytics.topSources.map((s) => {
+                const pct = analytics.totalInteractions ? Math.round((s.value / analytics.totalInteractions) * 100) : 0;
+                return (
+                  <li key={s.label}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-neutral-700">{s.label}</span>
+                      <span className="font-semibold text-neutral-500">{s.value} · {pct}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                      <div className="h-full rounded-full bg-emerald-600" style={{ width: `${pct}%` }} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
         <p className="mt-3 text-xs text-neutral-400">
           Tip: Verified and Featured plans appear higher in search, which typically increases views and clicks.
         </p>

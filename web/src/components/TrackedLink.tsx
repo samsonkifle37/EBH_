@@ -2,7 +2,7 @@
 
 interface Props {
   href: string;
-  type: "PHONE_CLICK" | "WEBSITE_CLICK" | "TICKET_CLICK";
+  type: "PHONE_CLICK" | "WEBSITE_CLICK" | "TICKET_CLICK" | "DIRECTION_CLICK" | "BOOKING_CLICK";
   businessId?: string;
   eventId?: string;
   className?: string;

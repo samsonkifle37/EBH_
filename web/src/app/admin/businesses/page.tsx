@@ -26,10 +26,10 @@ type Filter = "all" | "ready_to_approve" | "needs_image" | "needs_contact" | "du
 const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "All pending" },
   { key: "ready_to_approve", label: "Ready to approve" },
-  { key: "needs_contact", label: "Needs contact details" },
+  { key: "needs_contact", label: "Needs contact" },
   { key: "needs_image", label: "Needs image" },
   { key: "duplicate_candidates", label: "Duplicate candidates" },
-  { key: "auto_approved", label: "Auto-approved" },
+  { key: "auto_approved", label: "Recently auto approved" },
 ];
 
 const RENDER_CAP = 300;
@@ -62,14 +62,19 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
 
   const mergeTargets = businesses.filter((b) => b.sourceType !== "demo").map((b) => ({ id: b.id, name: b.name }));
 
+  const sevenDaysAgo = Date.now() - 7 * 24 * 3600 * 1000;
+  const inMainQueue = (b: Row) => b.status === "PENDING" && b.reviewBucket !== "needs_enrichment" && b.reviewBucket !== "needs_contact_info";
+  const isNeedsContact = (b: Row) => b.reviewBucket === "needs_contact_info" || (b.status === "PENDING" && hasImage(b) && !hasContact(b));
+  const isRecentlyAutoApproved = (b: Row) => b.approvedBy === "system" && b.createdAt.getTime() >= sevenDaysAgo;
+
   // counts for the filter chips
   const counts = {
-    all: businesses.filter((b) => b.status === "PENDING" && b.reviewBucket !== "needs_enrichment").length,
+    all: businesses.filter(inMainQueue).length,
     ready_to_approve: businesses.filter((b) => b.status === "PENDING" && hasImage(b) && hasContact(b)).length,
-    needs_contact: businesses.filter((b) => b.status === "PENDING" && hasImage(b) && !hasContact(b)).length,
+    needs_contact: businesses.filter(isNeedsContact).length,
     needs_image: businesses.filter((b) => b.reviewBucket === "needs_enrichment").length,
     duplicate_candidates: businesses.filter((b) => b.status === "PENDING" && isDuplicateCandidate(b)).length,
-    auto_approved: businesses.filter((b) => b.approvedBy === "system").length,
+    auto_approved: businesses.filter(isRecentlyAutoApproved).length,
   };
 
   function matches(b: Row): boolean {
@@ -77,16 +82,16 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
       case "ready_to_approve":
         return b.status === "PENDING" && hasImage(b) && hasContact(b);
       case "needs_contact":
-        return b.status === "PENDING" && hasImage(b) && !hasContact(b);
+        return isNeedsContact(b);
       case "needs_image":
         return b.reviewBucket === "needs_enrichment";
       case "duplicate_candidates":
         return b.status === "PENDING" && isDuplicateCandidate(b);
       case "auto_approved":
-        return b.approvedBy === "system";
+        return isRecentlyAutoApproved(b);
       default:
-        // main queue: pending, excluding the needs-enrichment bucket
-        return b.status === "PENDING" && b.reviewBucket !== "needs_enrichment";
+        // main queue: pending, excluding the needs-image and needs-contact buckets
+        return inMainQueue(b);
     }
   }
 

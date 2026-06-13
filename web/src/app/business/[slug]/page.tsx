@@ -17,6 +17,7 @@ import ReviewList from "@/components/ReviewList";
 import ReviewSummaryCard from "@/components/ReviewSummaryCard";
 import TrackedLink from "@/components/TrackedLink";
 import FavoriteButton from "@/components/FavoriteButton";
+import ShareButton from "@/components/ShareButton";
 import AdSlot from "@/components/AdSlot";
 import { CATEGORY_LABELS, CITY_LABELS, isCategory, isCity, type Category, type City } from "@/lib/types";
 
@@ -191,6 +192,17 @@ export default async function BusinessPage({ params }: Props) {
               >
                 ✍ Write a review
               </Link>
+            )}
+            <ShareButton businessId={business.id} title={business.name} />
+            {business.lat && business.lng && (
+              <TrackedLink
+                href={`https://www.openstreetmap.org/directions?to=${business.lat}%2C${business.lng}`}
+                type="DIRECTION_CLICK"
+                businessId={business.id}
+                className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 hover:border-emerald-600 hover:text-emerald-700"
+              >
+                🧭 Directions
+              </TrackedLink>
             )}
           </div>
 

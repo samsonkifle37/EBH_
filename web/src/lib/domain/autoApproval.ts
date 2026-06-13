@@ -71,7 +71,7 @@ export function evaluateListing(input: EvaluateInput): EvaluateResult {
   if (!input.hasImage) return PENDING("Awaiting image enrichment", "needs_enrichment");
 
   // Gate 2: contact details.
-  if (!hasContact) return PENDING("Missing contact information");
+  if (!hasContact) return PENDING("Missing contact information", "needs_contact_info");
 
   // Gate 3: valid name.
   if (!hasValidName(input.name)) return PENDING("Name needs review");

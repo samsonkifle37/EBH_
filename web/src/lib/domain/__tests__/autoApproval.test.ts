@@ -69,10 +69,10 @@ describe("evaluateListing", () => {
     expect(r.reviewBucket).toBe("needs_enrichment");
   });
 
-  it("keeps an image-but-no-contact listing pending with a clear reason", () => {
+  it("routes an image-but-no-contact listing to the needs_contact_info bucket", () => {
     const r = evaluateListing({ ...base, phone: "", website: "", email: "" });
     expect(r.status).toBe("PENDING");
-    expect(r.reviewBucket).toBe("");
+    expect(r.reviewBucket).toBe("needs_contact_info");
     expect(r.approvalReason).toBe("Missing contact information");
   });
 
