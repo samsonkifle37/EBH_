@@ -101,7 +101,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Link href={`/business/${b.slug}`} className="font-semibold text-neutral-900 hover:text-emerald-700">{b.name}</Link>
+              <Link href={`/admin/business/${b.id}`} className="font-semibold text-neutral-900 hover:text-emerald-700">{b.name}</Link>
               <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${b.status === "APPROVED" ? "bg-emerald-50 text-emerald-700" : b.status === "PENDING" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"}`}>
                 {b.status}
               </span>

@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { aggregateRating } from "@/lib/domain/ratings";
 import { isOpenNow, parseOpeningHours } from "@/lib/domain/hours";
-import { trustScoreForBusiness, isManualLeadSource } from "@/lib/domain/trust";
+import { trustV2ForBusiness } from "@/lib/trust";
 import { summarizeReviews } from "@/lib/domain/reviewSummary";
 import { allowDemoData } from "@/lib/flags";
 import Gallery from "@/components/Gallery";
@@ -64,17 +64,24 @@ export default async function BusinessPage({ params }: Props) {
   const { avg, count } = aggregateRating(business.reviews);
   const hours = parseOpeningHours(business.openingHours);
   const openNow = isOpenNow(hours);
-  const sourceTypes = business.sources.map((s) => s.sourceType);
-  const score = trustScoreForBusiness({
+  const score = trustV2ForBusiness({
+    plan: business.plan,
+    ownerId: business.ownerId,
+    sourceType: business.sourceType,
+    companyNumber: business.companyNumber,
+    mapsUrl: business.mapsUrl,
     phone: business.phone,
     website: business.website,
-    companyNumber: business.companyNumber,
-    ownerId: business.ownerId,
-    photoCount: business.photos.length,
-    hasGoogleSource: sourceTypes.includes("google_places") || business.mapsUrl.length > 0,
-    hasOsmSource: sourceTypes.includes("openstreetmap"),
-    hasManualLead: sourceTypes.some(isManualLeadSource),
-  });
+    email: business.email,
+    description: business.description,
+    address: business.address,
+    openingHours: business.openingHours,
+    socials: business.socials,
+    lastSourceCheckedAt: business.lastSourceCheckedAt,
+    photos: business.photos,
+    reviews: business.reviews,
+    sources: business.sources,
+  }).score;
   const summary = summarizeReviews(business.reviews.map((r) => `${r.title}. ${r.body}`));
   const categoryLabel = isCategory(business.category) ? CATEGORY_LABELS[business.category as Category] : business.category;
   const cityLabel = isCity(business.city) ? CITY_LABELS[business.city as City] : business.city;
