@@ -40,6 +40,12 @@ export default async function DataQualityPage() {
     jobs,
     noSource,
     photoCounts,
+    autoApproved,
+    needsImage,
+    pendingReview,
+    trustAvg,
+    nameRows,
+    missingContact,
   ] = await Promise.all([
     db.business.count(),
     db.business.count({ where: { sourceType: "demo" } }),
@@ -58,10 +64,25 @@ export default async function DataQualityPage() {
     db.importJob.aggregate({ _sum: { imported: true, duplicates: true, found: true } }),
     db.business.findMany({ where: { sources: { none: {} } }, select: { id: true, name: true, slug: true, sourceType: true } }),
     db.business.findMany({ select: { _count: { select: { photos: true } } } }),
+    db.business.count({ where: { approvedBy: "system" } }),
+    db.business.count({ where: { reviewBucket: "needs_enrichment" } }),
+    db.business.count({ where: { status: "PENDING", reviewBucket: { not: "needs_enrichment" } } }),
+    db.business.aggregate({ where: { status: "APPROVED" }, _avg: { dataConfidenceScore: true } }),
+    db.business.findMany({ select: { name: true } }),
+    db.business.count({ where: { status: "PENDING", phone: "", website: "", email: "", photos: { some: {} } } }),
   ]);
 
   const missingPhotos = photoCounts.filter((b) => b._count.photos === 0).length;
   const realTotal = total - demo;
+
+  // duplicate candidates: listings sharing a case-insensitive name
+  const nameTally = new Map<string, number>();
+  for (const r of nameRows) {
+    const k = r.name.trim().toLowerCase();
+    nameTally.set(k, (nameTally.get(k) ?? 0) + 1);
+  }
+  const duplicateCandidates = [...nameTally.values()].filter((c) => c > 1).reduce((a, c) => a + c, 0);
+  const trustAverage = Math.round(trustAvg._avg.dataConfidenceScore ?? 0);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
@@ -75,6 +96,16 @@ export default async function DataQualityPage() {
           ? " currently VISIBLE (ALLOW_DEMO_DATA=true — set to false in production)."
           : " hidden (ALLOW_DEMO_DATA is off)."}
       </p>
+
+      <h2 className="mt-8 text-sm font-bold uppercase tracking-wide text-neutral-400">Moderation (trust filter)</h2>
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <Link href="/admin/businesses?filter=auto_approved"><Stat label="Approved automatically" value={autoApproved} tone="good" /></Link>
+        <Link href="/admin/businesses?filter=all"><Stat label="Pending review" value={pendingReview} tone={pendingReview > 0 ? "warn" : "good"} /></Link>
+        <Link href="/admin/businesses?filter=needs_image"><Stat label="Needs image" value={needsImage} tone={needsImage > 0 ? "warn" : "good"} /></Link>
+        <Link href="/admin/businesses?filter=needs_contact"><Stat label="Needs contact details" value={missingContact} tone={missingContact > 0 ? "warn" : "good"} /></Link>
+        <Link href="/admin/businesses?filter=duplicate_candidates"><Stat label="Duplicate candidates" value={duplicateCandidates} tone={duplicateCandidates > 0 ? "warn" : "good"} /></Link>
+        <Stat label="Trust average" value={trustAverage} />
+      </div>
 
       <h2 className="mt-8 text-sm font-bold uppercase tracking-wide text-neutral-400">Listings by source</h2>
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

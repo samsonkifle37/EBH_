@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireAdminPage } from "@/lib/adminGuard";
+import { normalizeName } from "@/lib/domain/match";
 import AdminAction from "@/components/AdminAction";
 import AdminBusinessTools from "@/components/AdminBusinessTools";
 
@@ -20,20 +21,79 @@ const SOURCE_BADGES: Record<string, { label: string; cls: string }> = {
   demo: { label: "DEMO DATA", cls: "bg-red-50 text-red-600" },
 };
 
-export default async function AdminBusinessesPage() {
+type Filter = "all" | "ready_to_approve" | "needs_image" | "needs_contact" | "duplicate_candidates" | "auto_approved";
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "All pending" },
+  { key: "ready_to_approve", label: "Ready to approve" },
+  { key: "needs_contact", label: "Needs contact details" },
+  { key: "needs_image", label: "Needs image" },
+  { key: "duplicate_candidates", label: "Duplicate candidates" },
+  { key: "auto_approved", label: "Auto-approved" },
+];
+
+const RENDER_CAP = 300;
+
+export default async function AdminBusinessesPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   await requireAdminPage();
+  const { filter: filterParam } = await searchParams;
+  const filter: Filter = (FILTERS.some((f) => f.key === filterParam) ? filterParam : "all") as Filter;
 
   const businesses = await db.business.findMany({
     orderBy: [{ status: "desc" }, { createdAt: "desc" }],
-    include: { owner: { select: { email: true } }, sources: { select: { sourceType: true } } },
+    include: {
+      owner: { select: { email: true } },
+      sources: { select: { sourceType: true } },
+      _count: { select: { photos: true } },
+    },
   });
-  const pending = businesses.filter((b) => b.status === "PENDING");
-  const rest = businesses.filter((b) => b.status !== "PENDING");
-  const mergeTargets = businesses
-    .filter((b) => b.sourceType !== "demo")
-    .map((b) => ({ id: b.id, name: b.name }));
 
-  function row(b: (typeof businesses)[number]) {
+  type Row = (typeof businesses)[number];
+  const hasImage = (b: Row) => b._count.photos > 0;
+  const hasContact = (b: Row) => !!(b.phone || b.website || b.email);
+
+  // names shared by >1 listing → duplicate candidates
+  const nameCounts = new Map<string, number>();
+  for (const b of businesses) {
+    const n = normalizeName(b.name);
+    nameCounts.set(n, (nameCounts.get(n) ?? 0) + 1);
+  }
+  const isDuplicateCandidate = (b: Row) => (nameCounts.get(normalizeName(b.name)) ?? 0) > 1;
+
+  const mergeTargets = businesses.filter((b) => b.sourceType !== "demo").map((b) => ({ id: b.id, name: b.name }));
+
+  // counts for the filter chips
+  const counts = {
+    all: businesses.filter((b) => b.status === "PENDING" && b.reviewBucket !== "needs_enrichment").length,
+    ready_to_approve: businesses.filter((b) => b.status === "PENDING" && hasImage(b) && hasContact(b)).length,
+    needs_contact: businesses.filter((b) => b.status === "PENDING" && hasImage(b) && !hasContact(b)).length,
+    needs_image: businesses.filter((b) => b.reviewBucket === "needs_enrichment").length,
+    duplicate_candidates: businesses.filter((b) => b.status === "PENDING" && isDuplicateCandidate(b)).length,
+    auto_approved: businesses.filter((b) => b.approvedBy === "system").length,
+  };
+
+  function matches(b: Row): boolean {
+    switch (filter) {
+      case "ready_to_approve":
+        return b.status === "PENDING" && hasImage(b) && hasContact(b);
+      case "needs_contact":
+        return b.status === "PENDING" && hasImage(b) && !hasContact(b);
+      case "needs_image":
+        return b.reviewBucket === "needs_enrichment";
+      case "duplicate_candidates":
+        return b.status === "PENDING" && isDuplicateCandidate(b);
+      case "auto_approved":
+        return b.approvedBy === "system";
+      default:
+        // main queue: pending, excluding the needs-enrichment bucket
+        return b.status === "PENDING" && b.reviewBucket !== "needs_enrichment";
+    }
+  }
+
+  const filtered = businesses.filter(matches);
+  const shown = filtered.slice(0, RENDER_CAP);
+
+  function row(b: Row) {
     const source = SOURCE_BADGES[b.sourceType] ?? SOURCE_BADGES.admin_created;
     const chMatched = b.companyNumber || b.sources.some((s) => s.sourceType === "companies_house");
     return (
@@ -45,14 +105,17 @@ export default async function AdminBusinessesPage() {
               <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${b.status === "APPROVED" ? "bg-emerald-50 text-emerald-700" : b.status === "PENDING" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"}`}>
                 {b.status}
               </span>
+              {b.approvedBy === "system" && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">🤖 auto-verified</span>}
+              {b.reviewBucket === "needs_enrichment" && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700">needs image</span>}
               <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${source.cls}`}>{source.label}</span>
               {chMatched && <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">CH ✓</span>}
-              {b.featured && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">★ Featured</span>}
-              <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-500">L{b.verificationLevel}</span>
+              {!hasImage(b) && <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-400">no image</span>}
+              {!hasContact(b) && <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-400">no contact</span>}
               <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-500">conf {b.dataConfidenceScore}</span>
             </div>
             <p className="mt-0.5 text-xs text-neutral-400">
               {b.category} · {b.city} · {b.owner?.email ?? "unclaimed"} · plan {b.plan}
+              {b.approvalReason && <> · <span className="text-neutral-500">{b.approvalReason}</span></>}
               {b.sourceUrl && (
                 <>
                   {" · "}
@@ -67,9 +130,6 @@ export default async function AdminBusinessesPage() {
             {b.featured
               ? <AdminAction url={`/api/admin/businesses/${b.id}`} body={{ action: "unfeature" }} label="Unfeature" />
               : <AdminAction url={`/api/admin/businesses/${b.id}`} body={{ action: "feature" }} label="Feature" />}
-            {[1, 2, 3, 4].filter((l) => l !== b.verificationLevel).slice(0, 2).map((l) => (
-              <AdminAction key={l} url={`/api/admin/businesses/${b.id}`} body={{ action: "setLevel", level: l }} label={`L${l}`} />
-            ))}
           </div>
         </div>
         <AdminBusinessTools
@@ -89,15 +149,28 @@ export default async function AdminBusinessesPage() {
       </nav>
       <h1 className="mt-2 text-2xl font-bold tracking-tight">Businesses</h1>
 
-      <h2 className="mt-8 text-lg font-bold">Awaiting approval ({pending.length})</h2>
-      {pending.length === 0 ? (
-        <p className="mt-2 text-sm text-neutral-400">Queue is clear 🎉</p>
-      ) : (
-        <ul className="mt-3 space-y-3">{pending.map(row)}</ul>
-      )}
+      <div className="mt-5 flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <Link
+            key={f.key}
+            href={`/admin/businesses?filter=${f.key}`}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${filter === f.key ? "border-emerald-600 bg-emerald-50 text-emerald-700" : "border-neutral-300 text-neutral-600 hover:border-emerald-600 hover:text-emerald-700"}`}
+          >
+            {f.label} <span className="ml-1 text-neutral-400">{counts[f.key]}</span>
+          </Link>
+        ))}
+      </div>
 
-      <h2 className="mt-10 text-lg font-bold">All listings ({rest.length})</h2>
-      <ul className="mt-3 space-y-3">{rest.map(row)}</ul>
+      <p className="mt-5 text-sm text-neutral-500">
+        Showing {shown.length}{filtered.length > shown.length ? ` of ${filtered.length}` : ""} listings.
+        {filter === "all" && " The Needs image queue is hidden here — see the chip above."}
+      </p>
+
+      {shown.length === 0 ? (
+        <p className="mt-4 text-sm text-neutral-400">Nothing in this queue 🎉</p>
+      ) : (
+        <ul className="mt-3 space-y-3">{shown.map(row)}</ul>
+      )}
     </main>
   );
 }
