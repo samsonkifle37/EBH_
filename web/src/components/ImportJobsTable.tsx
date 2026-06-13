@@ -21,6 +21,7 @@ export default async function ImportJobsTable({ type }: { type: string }) {
             <th className="px-4 py-3">Found</th>
             <th className="px-4 py-3">Imported</th>
             <th className="px-4 py-3">Duplicates</th>
+            <th className="px-4 py-3">Skipped</th>
             <th className="px-4 py-3">When</th>
           </tr>
         </thead>
@@ -37,6 +38,7 @@ export default async function ImportJobsTable({ type }: { type: string }) {
               <td className="px-4 py-3">{j.found}</td>
               <td className="px-4 py-3">{j.imported}</td>
               <td className="px-4 py-3">{j.duplicates}</td>
+              <td className="px-4 py-3">{j.skipped}</td>
               <td className="px-4 py-3 text-neutral-400">{j.startedAt.toLocaleString("en-GB")}</td>
             </tr>
           ))}

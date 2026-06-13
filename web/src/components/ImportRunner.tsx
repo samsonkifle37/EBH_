@@ -8,31 +8,36 @@ interface Result {
   found: number;
   imported: number;
   duplicates: number;
+  skipped?: number;
   errors: string;
 }
 
 interface Props {
-  type: "google_places" | "companies_house";
-  presets: string[];
+  type: "google_places" | "companies_house" | "openstreetmap";
+  presets?: string[];
+  /** Single fixed-query import (OSM): one button, no presets or custom box. */
+  singleRun?: boolean;
+  singleRunLabel?: string;
 }
 
-export default function ImportRunner({ type, presets }: Props) {
+export default function ImportRunner({ type, presets = [], singleRun = false, singleRunLabel = "Run import" }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [running, setRunning] = useState<string | null>(null);
   const [results, setResults] = useState<{ query: string; result: Result }[]>([]);
 
-  async function run(q: string) {
-    if (!q.trim() || running) return;
-    setRunning(q);
+  async function run(q: string, label?: string) {
+    if ((!singleRun && !q.trim()) || running) return;
+    const tag = label ?? q;
+    setRunning(tag);
     try {
       const res = await fetch("/api/admin/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, query: q }),
+        body: JSON.stringify(singleRun ? { type } : { type, query: q }),
       });
       const result = (await res.json()) as Result;
-      setResults((prev) => [{ query: q, result }, ...prev]);
+      setResults((prev) => [{ query: tag, result }, ...prev]);
       router.refresh();
     } finally {
       setRunning(null);
@@ -41,39 +46,51 @@ export default function ImportRunner({ type, presets }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap gap-2">
-        {presets.map((p) => (
-          <button
-            key={p}
-            disabled={!!running}
-            onClick={() => run(p)}
-            className="rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition hover:border-emerald-600 hover:text-emerald-700 disabled:opacity-50"
-          >
-            {running === p ? "Importing…" : p}
-          </button>
-        ))}
-      </div>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          run(query);
-        }}
-        className="flex gap-2"
-      >
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Custom search query…"
-          className="w-full rounded-xl border border-neutral-300 px-4 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-        />
+      {singleRun ? (
         <button
-          disabled={!!running || !query.trim()}
-          className="shrink-0 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+          disabled={!!running}
+          onClick={() => run("", singleRunLabel)}
+          className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
         >
-          {running === query ? "Importing…" : "Run import"}
+          {running ? "Importing… (this can take up to 2 minutes)" : singleRunLabel}
         </button>
-      </form>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {presets.map((p) => (
+              <button
+                key={p}
+                disabled={!!running}
+                onClick={() => run(p)}
+                className="rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition hover:border-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+              >
+                {running === p ? "Importing…" : p}
+              </button>
+            ))}
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              run(query);
+            }}
+            className="flex gap-2"
+          >
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Custom search query…"
+              className="w-full rounded-xl border border-neutral-300 px-4 py-2 text-sm focus:border-emerald-600 focus:outline-none"
+            />
+            <button
+              disabled={!!running || !query.trim()}
+              className="shrink-0 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+            >
+              {running === query ? "Importing…" : "Run import"}
+            </button>
+          </form>
+        </>
+      )}
 
       {results.length > 0 && (
         <div className="space-y-2">
@@ -88,6 +105,7 @@ export default function ImportRunner({ type, presets }: Props) {
               ) : (
                 <p className="mt-1 text-xs">
                   Found {r.result.found} · Imported {r.result.imported} (pending approval) · Duplicates {r.result.duplicates}
+                  {typeof r.result.skipped === "number" ? ` · Skipped ${r.result.skipped}` : ""}
                 </p>
               )}
             </div>

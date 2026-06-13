@@ -9,8 +9,14 @@ export const metadata = { title: "Admin — Businesses" };
 const SOURCE_BADGES: Record<string, { label: string; cls: string }> = {
   google_places: { label: "Google Places", cls: "bg-blue-50 text-blue-700" },
   companies_house: { label: "Companies House", cls: "bg-indigo-50 text-indigo-700" },
+  openstreetmap: { label: "OpenStreetMap", cls: "bg-lime-50 text-lime-700" },
   owner_submitted: { label: "Owner submitted", cls: "bg-emerald-50 text-emerald-700" },
   admin_created: { label: "Admin created", cls: "bg-neutral-100 text-neutral-600" },
+  facebook_page: { label: "Lead · Facebook", cls: "bg-sky-50 text-sky-700" },
+  instagram: { label: "Lead · Instagram", cls: "bg-pink-50 text-pink-700" },
+  community_referral: { label: "Lead · Referral", cls: "bg-amber-50 text-amber-700" },
+  flyer: { label: "Lead · Flyer", cls: "bg-amber-50 text-amber-700" },
+  other: { label: "Lead · Other", cls: "bg-amber-50 text-amber-700" },
   demo: { label: "DEMO DATA", cls: "bg-red-50 text-red-600" },
 };
 

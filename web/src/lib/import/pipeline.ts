@@ -2,11 +2,12 @@ import { db } from "@/lib/db";
 import { slugify } from "@/lib/domain/slug";
 import { findDuplicate, type MatchCandidate } from "@/lib/domain/match";
 import { trustScoreForBusiness } from "@/lib/domain/trust";
-import { mapPlaceToBusiness, mapCompanyToBusiness } from "@/lib/domain/importMap";
+import { mapPlaceToBusiness, mapCompanyToBusiness, mapOsmElement } from "@/lib/domain/importMap";
 import { searchPlaces, photoProxyUrl } from "@/lib/import/googlePlaces";
 import { searchCompanies } from "@/lib/import/companiesHouse";
+import { fetchOverpass } from "@/lib/import/openStreetMap";
 
-export type ImportType = "google_places" | "companies_house";
+export type ImportType = "google_places" | "companies_house" | "openstreetmap";
 
 export interface ImportResult {
   jobId: string;
@@ -14,6 +15,7 @@ export interface ImportResult {
   found: number;
   imported: number;
   duplicates: number;
+  skipped: number;
   errors: string;
 }
 
@@ -87,13 +89,15 @@ export async function runImport(type: ImportType, query: string): Promise<Import
       const blocked = await db.importJob.create({
         data: { type, query, status: "failed", errors: message, finishedAt: new Date() },
       });
-      return { jobId: blocked.id, status: "failed", found: 0, imported: 0, duplicates: 0, errors: message };
+      return { jobId: blocked.id, status: "failed", found: 0, imported: 0, duplicates: 0, skipped: 0, errors: message };
     }
   }
   const job = await db.importJob.create({ data: { type, query } });
+  const startedAt = Date.now();
   let found = 0;
   let imported = 0;
   let duplicates = 0;
+  let skipped = 0;
   const errors: string[] = [];
 
   try {
@@ -104,8 +108,8 @@ export async function runImport(type: ImportType, query: string): Promise<Import
       found = places.length;
       for (const place of places) {
         const m = mapPlaceToBusiness(place, query);
-        if (!m.name || !m.placeId) continue;
-        if (m.businessStatus && m.businessStatus !== "OPERATIONAL") continue;
+        if (!m.name || !m.placeId) { skipped++; continue; }
+        if (m.businessStatus && m.businessStatus !== "OPERATIONAL") { skipped++; continue; }
         const dup = findDuplicate(
           { id: "", name: m.name, postcode: m.postcode, phone: m.phone, website: m.website, googlePlaceId: m.placeId, companyNumber: "" },
           existing
@@ -167,16 +171,16 @@ export async function runImport(type: ImportType, query: string): Promise<Import
             },
           },
         });
-        existing.push({ id: created.id, name: m.name, postcode: m.postcode, phone: m.phone, website: m.website, googlePlaceId: m.placeId, companyNumber: "" });
+        existing.push({ id: created.id, name: m.name, postcode: m.postcode, phone: m.phone, website: m.website, googlePlaceId: m.placeId, companyNumber: "", lat: m.lat, lng: m.lng });
         imported++;
       }
-    } else {
+    } else if (type === "companies_house") {
       const companies = await searchCompanies(query);
       found = companies.length;
       for (const item of companies) {
         const c = mapCompanyToBusiness(item);
-        if (!c.name || !c.companyNumber) continue;
-        if (c.companyStatus && c.companyStatus !== "active") continue;
+        if (!c.name || !c.companyNumber) { skipped++; continue; }
+        if (c.companyStatus && c.companyStatus !== "active") { skipped++; continue; }
         const dup = findDuplicate(
           { id: "", name: c.name, postcode: c.postcode, phone: "", website: "", googlePlaceId: "", companyNumber: c.companyNumber },
           existing
@@ -243,19 +247,95 @@ export async function runImport(type: ImportType, query: string): Promise<Import
         existing.push({ id: created.id, name: c.name, postcode: c.postcode, phone: "", website: "", googlePlaceId: "", companyNumber: c.companyNumber });
         imported++;
       }
+    } else {
+      // OpenStreetMap (Overpass) — single fixed query, no key, ODbL.
+      const elements = await fetchOverpass();
+      found = elements.length;
+      for (const el of elements) {
+        const m = mapOsmElement(el);
+        if (!m) { skipped++; continue; }
+        const dup = findDuplicate(
+          { id: "", name: m.name, postcode: m.postcode, phone: m.phone, website: m.website, googlePlaceId: "", companyNumber: "", lat: m.lat, lng: m.lng },
+          existing
+        );
+        if (dup) {
+          duplicates++;
+          // attach OSM evidence and recompute confidence on the matched listing
+          const matched = await db.business.findUniqueOrThrow({
+            where: { id: dup.match.id },
+            include: { photos: { select: { id: true } }, sources: { select: { sourceType: true } } },
+          });
+          await db.business.update({
+            where: { id: matched.id },
+            data: {
+              lastSourceCheckedAt: new Date(),
+              dataConfidenceScore: trustScoreForBusiness({
+                phone: matched.phone,
+                website: matched.website,
+                companyNumber: matched.companyNumber,
+                ownerId: matched.ownerId,
+                photoCount: matched.photos.length,
+                hasGoogleSource: matched.sources.some((s) => s.sourceType === "google_places"),
+                hasOsmSource: true,
+                hasManualLead: matched.sources.some((s) => s.sourceType !== "google_places" && s.sourceType !== "companies_house" && s.sourceType !== "openstreetmap"),
+              }),
+            },
+          });
+          await db.businessSource.upsert({
+            where: { sourceType_sourceId: { sourceType: "openstreetmap", sourceId: m.sourceId } },
+            update: { rawData: JSON.stringify(el), fetchedAt: new Date() },
+            create: { businessId: dup.match.id, sourceType: "openstreetmap", sourceId: m.sourceId, sourceUrl: m.sourceUrl, rawData: JSON.stringify(el) },
+          });
+          continue;
+        }
+        const created = await db.business.create({
+          data: {
+            name: m.name,
+            slug: await uniqueSlug(m.name),
+            category: m.category,
+            city: m.city || "london",
+            address: m.address,
+            postcode: m.postcode,
+            lat: m.lat,
+            lng: m.lng,
+            phone: m.phone,
+            website: m.website,
+            status: "PENDING",
+            sourceType: "openstreetmap",
+            sourceId: m.sourceId,
+            sourceUrl: m.sourceUrl,
+            lastSourceCheckedAt: new Date(),
+            dataConfidenceScore: trustScoreForBusiness({
+              phone: m.phone,
+              website: m.website,
+              companyNumber: "",
+              ownerId: null,
+              photoCount: 0,
+              hasGoogleSource: false,
+              hasOsmSource: true,
+            }),
+            sources: {
+              create: [{ sourceType: "openstreetmap", sourceId: m.sourceId, sourceUrl: m.sourceUrl, rawData: JSON.stringify(el) }],
+            },
+          },
+        });
+        existing.push({ id: created.id, name: m.name, postcode: m.postcode, phone: m.phone, website: m.website, googlePlaceId: "", companyNumber: "", lat: m.lat, lng: m.lng });
+        imported++;
+      }
     }
 
+    const durationMs = Date.now() - startedAt;
     const result = await db.importJob.update({
       where: { id: job.id },
-      data: { status: "completed", found, imported, duplicates, errors: errors.join("; "), finishedAt: new Date() },
+      data: { status: "completed", found, imported, duplicates, skipped, durationMs, errors: errors.join("; "), finishedAt: new Date() },
     });
-    return { jobId: result.id, status: "completed", found, imported, duplicates, errors: result.errors };
+    return { jobId: result.id, status: "completed", found, imported, duplicates, skipped, errors: result.errors };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     await db.importJob.update({
       where: { id: job.id },
-      data: { status: "failed", found, imported, duplicates, errors: message, finishedAt: new Date() },
+      data: { status: "failed", found, imported, duplicates, skipped, durationMs: Date.now() - startedAt, errors: message, finishedAt: new Date() },
     });
-    return { jobId: job.id, status: "failed", found, imported, duplicates, errors: message };
+    return { jobId: job.id, status: "failed", found, imported, duplicates, skipped, errors: message };
   }
 }
