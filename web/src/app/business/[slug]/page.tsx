@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { aggregateRating } from "@/lib/domain/ratings";
 import { isOpenNow, parseOpeningHours } from "@/lib/domain/hours";
-import { trustScoreForBusiness } from "@/lib/domain/trust";
+import { trustScoreForBusiness, isManualLeadSource } from "@/lib/domain/trust";
 import { summarizeReviews } from "@/lib/domain/reviewSummary";
 import { allowDemoData } from "@/lib/flags";
 import Gallery from "@/components/Gallery";
@@ -29,6 +29,7 @@ async function getBusiness(slug: string) {
     where: { slug },
     include: {
       photos: { orderBy: { sortOrder: "asc" } },
+      sources: { select: { sourceType: true } },
       reviews: {
         where: { status: "VISIBLE" },
         orderBy: { createdAt: "desc" },
@@ -63,13 +64,16 @@ export default async function BusinessPage({ params }: Props) {
   const { avg, count } = aggregateRating(business.reviews);
   const hours = parseOpeningHours(business.openingHours);
   const openNow = isOpenNow(hours);
+  const sourceTypes = business.sources.map((s) => s.sourceType);
   const score = trustScoreForBusiness({
     phone: business.phone,
     website: business.website,
     companyNumber: business.companyNumber,
     ownerId: business.ownerId,
     photoCount: business.photos.length,
-    hasGoogleSource: business.sourceType === "google_places" || business.mapsUrl.length > 0,
+    hasGoogleSource: sourceTypes.includes("google_places") || business.mapsUrl.length > 0,
+    hasOsmSource: sourceTypes.includes("openstreetmap"),
+    hasManualLead: sourceTypes.some(isManualLeadSource),
   });
   const summary = summarizeReviews(business.reviews.map((r) => `${r.title}. ${r.body}`));
   const categoryLabel = isCategory(business.category) ? CATEGORY_LABELS[business.category as Category] : business.category;

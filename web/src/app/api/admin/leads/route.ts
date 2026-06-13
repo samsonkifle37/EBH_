@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { requireAdminApi } from "@/lib/adminGuard";
 import { getSession } from "@/lib/session";
 import { slugify } from "@/lib/domain/slug";
-import { findDuplicate } from "@/lib/domain/match";
+import { findDuplicate, normalizeName } from "@/lib/domain/match";
 import { trustScoreForBusiness, isManualLeadSource } from "@/lib/domain/trust";
 import { CATEGORIES, CITIES } from "@/lib/types";
 
@@ -54,9 +54,14 @@ export async function POST(req: Request) {
       { id: "", name: d.businessName, postcode: "", phone: d.phone, website: d.website, googlePlaceId: "", companyNumber: "" },
       existing.map((e) => ({ id: e.id, name: e.name, postcode: e.postcode, phone: e.phone, website: e.website, companyNumber: e.companyNumber, googlePlaceId: "" }))
     );
-    if (dup) {
+    // Leads carry no postcode, so also warn on an exact normalised-name match.
+    const nameMatch = dup
+      ? null
+      : existing.find((e) => normalizeName(e.name) === normalizeName(d.businessName));
+    const hit = dup ? { id: dup.match.id, name: dup.match.name, reason: dup.reason } : nameMatch ? { id: nameMatch.id, name: nameMatch.name, reason: "name" as const } : null;
+    if (hit) {
       return NextResponse.json({
-        duplicate: { id: dup.match.id, name: dup.match.name, slug: slugById.get(dup.match.id) ?? "", reason: dup.reason },
+        duplicate: { id: hit.id, name: hit.name, slug: slugById.get(hit.id) ?? "", reason: hit.reason },
       });
     }
   }

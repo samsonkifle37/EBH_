@@ -65,11 +65,23 @@ queue** — nothing auto-publishes.
 - **`COMPANIES_HOUSE_API_KEY`** (free) — enables `/admin/import/companies-house`
   (name terms like "Habesha", "Abyssinia"). Matches corroborate existing
   listings (+15 trust, "CH ✓"); unmatched companies import as pending only.
+- **OpenStreetMap** (`/admin/import/openstreetmap`) — **no key, no billing**,
+  ODbL-licensed. One Overpass query pulls Ethiopian/Eritrean businesses across
+  the UK; throttled to one request / 2 s (`OVERPASS_API_URL` overrides the
+  endpoint). Matches corroborate existing listings (+10 trust); the rest import
+  as pending. Source links to openstreetmap.org are retained on every record.
+- **Manual lead capture** (`/admin/import/leads`) — a fast intake form (not a
+  scraper) for businesses found via Facebook, Instagram, referrals, flyers and
+  events. Each lead is pending with +5 trust and full source attribution; the
+  form warns on likely duplicates and shows a session activity list.
 - **Dedup & merge** — importers match on place id, company number, phone,
-  website and name+postcode; admins can merge duplicates, reassign
-  category/city, and monitor everything at `/admin/data-quality`.
+  website, name+postcode, and **geo-proximity (within 50 m)**; admins can merge
+  duplicates, reassign category/city, and monitor everything at
+  `/admin/data-quality`.
 - **Trust Score (0–100, evidence only)**: +30 Google Place · +20 phone ·
-  +20 website · +15 Companies House match · +10 owner claimed · +5 photos.
+  +20 website · +15 Companies House match · +10 owner claimed ·
+  +10 OpenStreetMap · +5 photos · +5 manual lead. OSM/leads corroborate but are
+  not primary verification.
 
 ## Activating other integrations (optional)
 
@@ -102,5 +114,8 @@ web/                Next.js app
 Levels: 1 email-verified · 2 phone-verified · 3 business-verified · 4 premium
 (shown as badges). The public **Trust Score (0–100)** is evidence-based, never
 invented: +30 Google Place exists · +20 phone · +20 website · +15 Companies
-House match · +10 owner claimed · +5 photos. Displayed on every listing as
+House match · +10 owner claimed · +10 OpenStreetMap source · +5 photos ·
++5 manual lead (capped at 100). OpenStreetMap and manual leads corroborate a
+listing but are weaker than Google Places, so they never act as primary
+verification. Displayed on every listing as
 "Trust Score: N/100 · Based on verified public data".

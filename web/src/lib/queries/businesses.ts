@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { aggregateRating } from "@/lib/domain/ratings";
 import { isOpenNow, parseOpeningHours } from "@/lib/domain/hours";
-import { trustScoreForBusiness } from "@/lib/domain/trust";
+import { trustScoreForBusiness, isManualLeadSource } from "@/lib/domain/trust";
 import { demoFilter } from "@/lib/flags";
 import type { Business, BusinessPhoto, Review } from "@prisma/client";
 
@@ -46,6 +46,8 @@ export function toSummary(b: BusinessWithRels, now: Date = new Date()): Business
       ownerId: b.ownerId,
       photoCount: b.photos.length,
       hasGoogleSource: b.sourceType === "google_places" || b.mapsUrl.length > 0,
+      hasOsmSource: b.sourceType === "openstreetmap",
+      hasManualLead: isManualLeadSource(b.sourceType),
     }),
     featured: b.featured,
     openNow: isOpenNow(parseOpeningHours(b.openingHours), now),

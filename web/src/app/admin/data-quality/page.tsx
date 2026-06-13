@@ -27,6 +27,8 @@ export default async function DataQualityPage() {
     demo,
     googleSourced,
     chSourced,
+    osmSourced,
+    leadSourced,
     ownerSubmitted,
     adminCreated,
     pending,
@@ -43,6 +45,8 @@ export default async function DataQualityPage() {
     db.business.count({ where: { sourceType: "demo" } }),
     db.business.count({ where: { sourceType: "google_places" } }),
     db.business.count({ where: { sourceType: "companies_house" } }),
+    db.business.count({ where: { sourceType: "openstreetmap" } }),
+    db.business.count({ where: { sourceType: { in: ["facebook_page", "instagram", "community_referral", "flyer", "other"] } } }),
     db.business.count({ where: { sourceType: "owner_submitted" } }),
     db.business.count({ where: { sourceType: "admin_created" } }),
     db.business.count({ where: { status: "PENDING" } }),
@@ -78,7 +82,10 @@ export default async function DataQualityPage() {
         <Stat label="Real (non-demo)" value={realTotal} tone="good" />
         <Stat label="Google Places" value={googleSourced} />
         <Stat label="Companies House" value={chSourced} />
+        <Stat label="OpenStreetMap" value={osmSourced} />
+        <Stat label="Manual leads" value={leadSourced} />
         <Stat label="Owner submitted" value={ownerSubmitted} />
+        <Stat label="Admin created" value={adminCreated} />
         <Stat label="Demo (flagged)" value={demo} tone={demo > 0 ? "warn" : "good"} />
       </div>
 

@@ -44,7 +44,12 @@ export async function fetchOverpass(): Promise<OsmElement[]> {
     try {
       res = await fetch(overpassUrl(), {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          // Overpass/Apache rejects requests without a descriptive User-Agent.
+          "User-Agent": "EthiopianBusinessHubUK/1.0 (admin import; +https://ethiopianbusinesshub.uk)",
+          Accept: "application/json",
+        },
         body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
       });
     } catch (e) {
