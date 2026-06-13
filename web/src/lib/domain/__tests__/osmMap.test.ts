@@ -16,6 +16,8 @@ const NODE = {
     "addr:postcode": "N17 0AA",
     phone: "020 8801 1234",
     website: "https://addisababa.example.co.uk",
+    email: "hello@addisababa.example.co.uk",
+    image: "https://images.example.org/addis.jpg",
     opening_hours: "Mo-Su 12:00-22:00",
   },
 };
@@ -62,6 +64,14 @@ describe("mapOsmElement", () => {
     expect(b.sourceId).toBe("node/123456789");
     expect(b.sourceUrl).toBe("https://www.openstreetmap.org/node/123456789");
     expect(b.openingHoursRaw).toBe("Mo-Su 12:00-22:00");
+    expect(b.email).toBe("hello@addisababa.example.co.uk");
+    expect(b.imageUrl).toBe("https://images.example.org/addis.jpg");
+  });
+
+  it("falls back to contact:email and leaves image empty when absent", () => {
+    const b = mapOsmElement(WAY)!;
+    expect(b.email).toBe("");
+    expect(b.imageUrl).toBe("");
   });
 
   it("uses center coordinates for ways", () => {

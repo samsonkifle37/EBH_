@@ -3,6 +3,7 @@ import { slugify } from "@/lib/domain/slug";
 import { findDuplicate, type MatchCandidate } from "@/lib/domain/match";
 import { trustScoreForBusiness } from "@/lib/domain/trust";
 import { mapPlaceToBusiness, mapCompanyToBusiness, mapOsmElement } from "@/lib/domain/importMap";
+import { evaluateListing, isPlaceholderImage } from "@/lib/domain/autoApproval";
 import { searchPlaces, photoProxyUrl } from "@/lib/import/googlePlaces";
 import { searchCompanies } from "@/lib/import/companiesHouse";
 import { fetchOverpass } from "@/lib/import/openStreetMap";
@@ -288,6 +289,17 @@ export async function runImport(type: ImportType, query: string): Promise<Import
           });
           continue;
         }
+        const hasImage = !!m.imageUrl && !isPlaceholderImage(m.imageUrl);
+        const verdict = evaluateListing({
+          name: m.name,
+          hasImage,
+          phone: m.phone,
+          website: m.website,
+          email: m.email,
+          hasOsm: true,
+          hasGoogle: false,
+          hasCompaniesHouse: false,
+        });
         const created = await db.business.create({
           data: {
             name: m.name,
@@ -300,7 +312,12 @@ export async function runImport(type: ImportType, query: string): Promise<Import
             lng: m.lng,
             phone: m.phone,
             website: m.website,
-            status: "PENDING",
+            email: m.email,
+            status: verdict.status,
+            verificationStatus: verdict.verificationStatus,
+            approvedBy: verdict.approvedBy,
+            approvalReason: verdict.approvalReason,
+            reviewBucket: verdict.reviewBucket,
             sourceType: "openstreetmap",
             sourceId: m.sourceId,
             sourceUrl: m.sourceUrl,
@@ -310,10 +327,11 @@ export async function runImport(type: ImportType, query: string): Promise<Import
               website: m.website,
               companyNumber: "",
               ownerId: null,
-              photoCount: 0,
+              photoCount: hasImage ? 1 : 0,
               hasGoogleSource: false,
               hasOsmSource: true,
             }),
+            photos: hasImage ? { create: [{ url: m.imageUrl, alt: m.name, sortOrder: 0 }] } : undefined,
             sources: {
               create: [{ sourceType: "openstreetmap", sourceId: m.sourceId, sourceUrl: m.sourceUrl, rawData: JSON.stringify(el) }],
             },

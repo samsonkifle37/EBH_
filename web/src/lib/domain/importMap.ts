@@ -150,6 +150,8 @@ export interface MappedOsm {
   city: City | "";
   phone: string;
   website: string;
+  email: string;
+  imageUrl: string;
   category: string;
   openingHoursRaw: string;
   categorySignals: { cuisine?: string; amenity?: string; shop?: string };
@@ -191,6 +193,8 @@ export function mapOsmElement(el: OsmElement): MappedOsm | null {
     city: detectCity(`${tags["addr:city"] ?? ""} ${tags["addr:street"] ?? ""}`),
     phone: tags.phone ?? tags["contact:phone"] ?? "",
     website: tags.website ?? tags["contact:website"] ?? "",
+    email: tags.email ?? tags["contact:email"] ?? "",
+    imageUrl: tags.image ?? tags["image:0"] ?? "",
     category: osmCategory(tags),
     openingHoursRaw: tags.opening_hours ?? "",
     categorySignals: { cuisine: tags.cuisine, amenity: tags.amenity, shop: tags.shop },
