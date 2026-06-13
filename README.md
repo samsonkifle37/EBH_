@@ -121,13 +121,46 @@ web/                Next.js app
   src/app/          pages and /api routes
 ```
 
-## Verification & trust model
+## Trust Engine V2
 
-Levels: 1 email-verified · 2 phone-verified · 3 business-verified · 4 premium
-(shown as badges). The public **Trust Score (0–100)** is evidence-based, never
-invented: +30 Google Place exists · +20 phone · +20 website · +15 Companies
-House match · +10 owner claimed · +10 OpenStreetMap source · +5 photos ·
-+5 manual lead (capped at 100). OpenStreetMap and manual leads corroborate a
-listing but are weaker than Google Places, so they never act as primary
-verification. Displayed on every listing as
-"Trust Score: N/100 · Based on verified public data".
+The public **Trust Score (0–100)** drives ranking and is the foundation of every
+monetization decision. It is additive, capped at 100, and never invented:
+
+| Signal | Points |
+|---|---|
+| Verified subscription (paid tier) | +20 |
+| Owner claimed | +20 |
+| Google Places listing | +15 |
+| Companies House match | +10 |
+| OpenStreetMap listing | +5 |
+| Community lead | +2 |
+| Phone / Website | +5 each |
+| Email | +3 |
+| Photos | +2 each (max +10) |
+| Reviews | +1 each (max +5) plus +5 if avg ≥ 4 with ≥3 reviews |
+| Recent activity (event in last 30 days) | +5 |
+| Profile completion (description, address, hours, social) | +2.5 each (max +10) |
+
+Admins see the exact per-factor breakdown at `/admin/business/[id]`
+("why this score"). The directory ranks by featured → trust → rating.
+`lib/domain/trustV2.ts` is the pure, tested engine; `lib/trust.ts` derives the
+inputs from a business record.
+
+## Analytics
+
+Tracked events: listing views, phone/website/direction/share/booking clicks
+(+ event views & ticket clicks). Raw `AnalyticsEvent` rows roll up into
+`BusinessAnalyticsDaily` (`lib/analytics/rollup.ts`, idempotent), read back by
+`lib/analytics/summary.ts`. The owner dashboard
+(`/dashboard/business/[id]?days=7|30|90`) shows metric cards, an inline trend
+chart, and a "top interactions" breakdown. Share/Directions buttons on the
+public listing generate the new event types.
+
+## Auto-approval review buckets
+
+New OSM imports auto-publish only when every gate passes (image, contact, valid
+name, not duplicate, auto-approval score ≥ 30). Otherwise they route to a review
+bucket — `needs_enrichment` (no image) or `needs_contact_info` (image but no
+contact) — both hidden from the main moderation queue. `/admin/businesses`
+filter chips: Ready to approve · Needs contact · Needs image · Duplicate
+candidates · Recently auto approved.
