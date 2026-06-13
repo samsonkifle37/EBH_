@@ -26,6 +26,8 @@ async function loadCandidates(): Promise<MatchCandidate[]> {
       phone: true,
       website: true,
       companyNumber: true,
+      lat: true,
+      lng: true,
       sourceType: true,
       sourceId: true,
       sources: { select: { sourceType: true, sourceId: true } },
@@ -38,6 +40,8 @@ async function loadCandidates(): Promise<MatchCandidate[]> {
     phone: r.phone,
     website: r.website,
     companyNumber: r.companyNumber,
+    lat: r.lat,
+    lng: r.lng,
     googlePlaceId:
       r.sources.find((s) => s.sourceType === "google_places")?.sourceId ??
       (r.sourceType === "google_places" ? r.sourceId : ""),

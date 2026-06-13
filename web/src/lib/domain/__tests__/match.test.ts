@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeName, normalizePhone, websiteHost, findDuplicate, type MatchCandidate } from "../match";
+import { normalizeName, normalizePhone, websiteHost, findDuplicate, distanceMetres, type MatchCandidate } from "../match";
 
 describe("normalizeName", () => {
   it("strips company suffixes and punctuation", () => {
@@ -61,5 +61,36 @@ describe("findDuplicate", () => {
   it("returns null when nothing matches", () => {
     const r = findDuplicate({ id: "", name: "Totally Different", postcode: "M1 1AA", phone: "0161 000 0000", website: "https://other.com", googlePlaceId: "p-9", companyNumber: "999" }, existing);
     expect(r).toBeNull();
+  });
+
+  it("matches by geo proximity within 50 metres", () => {
+    const geoExisting: MatchCandidate[] = [
+      { id: "g1", name: "Some Cafe", postcode: "", phone: "", website: "", googlePlaceId: "", companyNumber: "", lat: 51.5074, lng: -0.1278 },
+    ];
+    // ~20m away, different name/no shared identifiers
+    const near = findDuplicate({ id: "", name: "Different Cafe", postcode: "", phone: "", website: "", googlePlaceId: "", companyNumber: "", lat: 51.50758, lng: -0.1278 }, geoExisting);
+    expect(near?.reason).toBe("geo_proximity");
+    // ~200m away → no match
+    const far = findDuplicate({ id: "", name: "Different Cafe", postcode: "", phone: "", website: "", googlePlaceId: "", companyNumber: "", lat: 51.5092, lng: -0.1278 }, geoExisting);
+    expect(far).toBeNull();
+  });
+
+  it("does not geo-match when coordinates are missing", () => {
+    const geoExisting: MatchCandidate[] = [
+      { id: "g1", name: "A", postcode: "", phone: "", website: "", googlePlaceId: "", companyNumber: "", lat: 51.5074, lng: -0.1278 },
+    ];
+    const r = findDuplicate({ id: "", name: "B", postcode: "", phone: "", website: "", googlePlaceId: "", companyNumber: "" }, geoExisting);
+    expect(r).toBeNull();
+  });
+});
+
+describe("distanceMetres", () => {
+  it("is ~0 for identical points", () => {
+    expect(distanceMetres(51.5, -0.12, 51.5, -0.12)).toBeCloseTo(0, 1);
+  });
+  it("measures a known short distance", () => {
+    // 0.001 deg latitude ≈ 111 m
+    expect(distanceMetres(51.5, -0.12, 51.501, -0.12)).toBeGreaterThan(100);
+    expect(distanceMetres(51.5, -0.12, 51.501, -0.12)).toBeLessThan(120);
   });
 });

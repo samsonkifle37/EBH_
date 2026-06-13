@@ -24,7 +24,12 @@ describe("trustScore", () => {
     expect(trustScore({ hasGooglePlace: false, hasPhone: false, hasWebsite: false, hasCompaniesHouseMatch: false, ownerClaimed: false, hasPhotos: true })).toBe(5);
   });
 
-  it("sums to exactly 100 with all evidence", () => {
+  it("awards +10 for an OpenStreetMap source and +5 for a manual lead", () => {
+    expect(trustScore({ hasGooglePlace: false, hasPhone: false, hasWebsite: false, hasCompaniesHouseMatch: false, ownerClaimed: false, hasPhotos: false, hasOsmSource: true })).toBe(10);
+    expect(trustScore({ hasGooglePlace: false, hasPhone: false, hasWebsite: false, hasCompaniesHouseMatch: false, ownerClaimed: false, hasPhotos: false, hasManualLead: true })).toBe(5);
+  });
+
+  it("caps at 100 even with every evidence slot", () => {
     expect(
       trustScore({
         hasGooglePlace: true,
@@ -33,6 +38,8 @@ describe("trustScore", () => {
         hasCompaniesHouseMatch: true,
         ownerClaimed: true,
         hasPhotos: true,
+        hasOsmSource: true,
+        hasManualLead: true,
       })
     ).toBe(100);
   });

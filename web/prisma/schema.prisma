@@ -48,7 +48,7 @@ model Business {
   createdAt         DateTime  @default(now())
 
   // --- source tracking (real-data upgrade) ---
-  sourceType          String    @default("admin_created") // google_places | companies_house | owner_submitted | admin_created | demo
+  sourceType          String    @default("admin_created") // google_places | companies_house | openstreetmap | owner_submitted | admin_created | demo | facebook_page | instagram | community_referral | flyer | other
   sourceId            String    @default("")
   sourceUrl           String    @default("")
   lastSourceCheckedAt DateTime?
@@ -183,13 +183,15 @@ model EventSource {
 
 model ImportJob {
   id         String    @id @default(cuid())
-  type       String // google_places | companies_house
+  type       String // google_places | companies_house | openstreetmap
   query      String
   status     String    @default("running") // running | completed | failed
   found      Int       @default(0)
   imported   Int       @default(0)
   duplicates Int       @default(0)
-  errors     String    @default("")
+  skipped    Int       @default(0)
+  durationMs Int?
+  errors     String    @default("") // raw error log
   startedAt  DateTime  @default(now())
   finishedAt DateTime?
 }
