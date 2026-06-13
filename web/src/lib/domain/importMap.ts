@@ -128,3 +128,71 @@ export function mapCompanyToBusiness(item: CompanySearchItem): MappedCompany {
     sourceUrl: `https://find-and-update.company-information.service.gov.uk/company/${item.company_number}`,
   };
 }
+
+/** A raw OpenStreetMap element from an Overpass `out center tags` response. */
+export interface OsmElement {
+  type: string; // node | way | relation
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat?: number; lon?: number };
+  tags?: Record<string, string>;
+}
+
+export interface MappedOsm {
+  name: string;
+  sourceId: string; // {type}/{id}
+  sourceUrl: string;
+  lat: number | null;
+  lng: number | null;
+  address: string;
+  postcode: string;
+  city: City | "";
+  phone: string;
+  website: string;
+  category: string;
+  openingHoursRaw: string;
+  categorySignals: { cuisine?: string; amenity?: string; shop?: string };
+}
+
+function osmCategory(tags: Record<string, string>): string {
+  const cuisine = (tags.cuisine ?? "").toLowerCase();
+  const amenity = (tags.amenity ?? "").toLowerCase();
+  const shop = (tags.shop ?? "").toLowerCase();
+  if (amenity === "place_of_worship") return "churches";
+  if (amenity === "cafe" || shop === "coffee") return "cafes";
+  if (shop) return "grocery-stores"; // convenience, supermarket, etc.
+  if (amenity === "restaurant" || amenity === "fast_food" || cuisine) return "restaurants";
+  return "restaurants";
+}
+
+export function mapOsmElement(el: OsmElement): MappedOsm | null {
+  const tags = el.tags ?? {};
+  const name = tags.name;
+  if (!name) return null;
+
+  const lat = el.type === "node" ? el.lat ?? null : el.center?.lat ?? null;
+  const lng = el.type === "node" ? el.lon ?? null : el.center?.lon ?? null;
+
+  const addressParts = [
+    [tags["addr:housenumber"], tags["addr:street"]].filter(Boolean).join(" "),
+    tags["addr:city"],
+    tags["addr:postcode"],
+  ].filter(Boolean);
+
+  return {
+    name,
+    sourceId: `${el.type}/${el.id}`,
+    sourceUrl: `https://www.openstreetmap.org/${el.type}/${el.id}`,
+    lat,
+    lng,
+    address: addressParts.join(", "),
+    postcode: tags["addr:postcode"] ?? "",
+    city: detectCity(`${tags["addr:city"] ?? ""} ${tags["addr:street"] ?? ""}`),
+    phone: tags.phone ?? tags["contact:phone"] ?? "",
+    website: tags.website ?? tags["contact:website"] ?? "",
+    category: osmCategory(tags),
+    openingHoursRaw: tags.opening_hours ?? "",
+    categorySignals: { cuisine: tags.cuisine, amenity: tags.amenity, shop: tags.shop },
+  };
+}
