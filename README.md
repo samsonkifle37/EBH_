@@ -78,6 +78,18 @@ queue** — nothing auto-publishes.
   website, name+postcode, and **geo-proximity (within 50 m)**; admins can merge
   duplicates, reassign category/city, and monitor everything at
   `/admin/data-quality`.
+- **Auto-approval trust filter** — new OSM imports are auto-published only when
+  they pass every gate: has image, has contact (phone/website/email), valid
+  name, not a duplicate, and an auto-approval score ≥ 30 (OSM/Google/CH +10,
+  website +10, phone/email +5, image +5). Auto-approved listings are tagged
+  `approvedBy=system` / `verificationStatus=auto_verified`. Listings with no
+  image go to a **Needs-image enrichment queue** (`reviewBucket=needs_enrichment`)
+  that is hidden from the main moderation queue; image-but-no-contact stays
+  pending. `/admin/businesses` has filter chips (Ready to approve · Needs
+  contact · Needs image · Duplicate candidates · Auto-approved) and
+  `/admin/data-quality` shows the matching metric cards. Note: OpenStreetMap
+  rarely stores photos, so most OSM records land in the Needs-image queue until
+  enriched (Google match or owner claim) rather than auto-approving.
 - **Trust Score (0–100, evidence only)**: +30 Google Place · +20 phone ·
   +20 website · +15 Companies House match · +10 owner claimed ·
   +10 OpenStreetMap · +5 photos · +5 manual lead. OSM/leads corroborate but are
