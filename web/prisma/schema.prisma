@@ -37,6 +37,7 @@ model Business {
   lng               Float?
   phone             String    @default("")
   website           String    @default("")
+  email             String    @default("")
   socials           String    @default("{}") // JSON {instagram, facebook, tiktok}
   openingHours      String    @default("{}") // JSON {mon:[{open,close}],...}
   verificationLevel Int       @default(0) // 0-4
@@ -57,6 +58,12 @@ model Business {
   googleReviewCount   Int?
   mapsUrl             String    @default("")
   companyNumber       String    @default("")
+
+  // --- auto-approval (trust filter) ---
+  verificationStatus String @default("") // "" | auto_verified
+  approvedBy         String @default("") // "" | system | <adminId>
+  approvalReason     String @default("")
+  reviewBucket       String @default("") // "" | needs_enrichment
 
   owner           User?            @relation(fields: [ownerId], references: [id])
   photos          BusinessPhoto[]
