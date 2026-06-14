@@ -156,6 +156,39 @@ Tracked events: listing views, phone/website/direction/share/booking clicks
 chart, and a "top interactions" breakdown. Share/Directions buttons on the
 public listing generate the new event types.
 
+## Payments (Stripe — Milestone B)
+
+Real Stripe Checkout + webhooks, activated by env (dev-mode fallback otherwise):
+
+```
+STRIPE_SECRET_KEY="sk_test_…"
+STRIPE_WEBHOOK_SECRET="whsec_…"
+STRIPE_PRICE_VERIFIED="price_…"   # recurring £2.99/mo (subscription)
+STRIPE_PRICE_FEATURED="price_…"   # recurring £4.99/mo (subscription)
+STRIPE_PRICE_CLAIM="price_…"      # one-time £9.99 (payment)
+NEXT_PUBLIC_SITE_URL="https://…"
+```
+
+- **Products** (`lib/payments/stripe.ts`, no hardcoded ids): Verified/Featured
+  are subscriptions; claim is one-time. Price ids come from env.
+- **Checkout** `POST /api/checkout` `{product, businessId|claimId}` → returns a
+  Stripe Checkout `url`. Owner/claimant-guarded. Pre-creates a pending
+  `Subscription` row for subs. **Without keys** it applies the upgrade/claim
+  immediately (dev mode) so the app stays usable.
+- **Webhook** `POST /api/webhooks/stripe` — raw-body signature verification;
+  **idempotent** via the `ProcessedStripeEvent` table (event id claimed before
+  work, released if the handler throws so retries reprocess but never
+  double-grant). Handles `checkout.session.completed`, `invoice.paid`,
+  `customer.subscription.deleted`, `invoice.payment_failed`.
+- **Pay-to-activate claims**: admin approval endorses a claim but ownership is
+  granted by the webhook on the £9.99 payment (`grantClaimOwnership`, idempotent,
+  writes a `Payment{kind:"claim"}`). With no keys, approval grants immediately.
+- **Auto-downgrade**: subscription deletion → `plan=FREE`, `featured=false`;
+  failed payment → `past_due`.
+- Local webhook testing: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`.
+- Tests: event interpretation, idempotency (same event twice = one grant),
+  signature verify/reject, applier dispatch (105 unit tests total).
+
 ## Ownership & monetisation foundation (pre-Stripe)
 
 Claiming is **admin-reviewed**, not instant: a signed-in user submits an
