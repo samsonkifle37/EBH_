@@ -3,8 +3,9 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdminApi } from "@/lib/adminGuard";
 import { getSession } from "@/lib/session";
-import { addRole } from "@/lib/auth";
 import { claimTransition, canActOnClaim, type ClaimStatus, type ClaimAction } from "@/lib/domain/claim";
+import { stripeConfigured, PRODUCTS } from "@/lib/payments/stripe";
+import { grantClaimOwnership } from "@/lib/payments/grant";
 
 const schema = z.object({ action: z.enum(["approve", "reject", "request_more_evidence"]) });
 
@@ -30,18 +31,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (claim.business.ownerId && claim.business.ownerId !== claim.userId) {
       return NextResponse.json({ error: "This business is already owned by another user" }, { status: 409 });
     }
-    await db.$transaction([
-      db.claimRequest.update({
-        where: { id },
-        data: { status: nextStatus, reviewedAt: new Date(), reviewedBy: session?.userId ?? null },
-      }),
-      db.business.update({
-        where: { id: claim.businessId },
-        data: { ownerId: claim.userId, claimedAt: new Date(), verificationLevel: Math.max(claim.business.verificationLevel, 1) },
-      }),
-    ]);
-    await addRole(claim.userId, "BUSINESS_OWNER");
-    return NextResponse.json({ ok: true, status: nextStatus });
+    // pay-to-activate: approving endorses the claim but does NOT grant ownership;
+    // the claimant pays £9.99 and the Stripe webhook grants it. Without Stripe
+    // configured we grant immediately (dev mode) so the flow stays usable.
+    await db.claimRequest.update({
+      where: { id },
+      data: { status: "approved", reviewedAt: new Date(), reviewedBy: session?.userId ?? null },
+    });
+    if (!stripeConfigured()) {
+      await grantClaimOwnership(id, PRODUCTS.CLAIM.amountPence);
+      return NextResponse.json({ ok: true, status: nextStatus, ownershipGranted: true, devMode: true });
+    }
+    return NextResponse.json({ ok: true, status: nextStatus, awaitingPayment: true });
   }
 
   await db.claimRequest.update({

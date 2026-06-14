@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import ClaimForm from "@/components/ClaimForm";
+import ClaimActivateButton from "@/components/ClaimActivateButton";
 
 export const metadata = { title: "Claim Your Business" };
 
@@ -18,9 +19,11 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
   if (!business) notFound();
 
   const myClaim = await db.claimRequest.findFirst({
-    where: { businessId: business.id, userId: session.userId, status: { in: ["pending", "needs_more_evidence"] } },
-    select: { status: true },
+    where: { businessId: business.id, userId: session.userId, status: { in: ["pending", "needs_more_evidence", "approved"] } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, status: true, paymentStatus: true },
   });
+  const awaitingPayment = myClaim?.status === "approved" && myClaim.paymentStatus !== "paid";
 
   return (
     <main className="mx-auto max-w-xl px-4 py-12">
@@ -31,6 +34,12 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
         <div className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-600">
           This business has already been claimed.{" "}
           <Link href={`/business/${slug}`} className="font-semibold text-emerald-700 hover:underline">Back to listing →</Link>
+        </div>
+      ) : awaitingPayment && myClaim ? (
+        <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-sm text-emerald-900">
+          <p className="font-semibold">Your claim was approved 🎉</p>
+          <p className="mt-1 mb-4">Activate ownership with a one-off £9.99 payment to unlock editing, review responses, analytics and the owner badge.</p>
+          <ClaimActivateButton claimId={myClaim.id} />
         </div>
       ) : myClaim ? (
         <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">

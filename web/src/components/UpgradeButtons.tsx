@@ -8,15 +8,19 @@ export default function UpgradeButtons({ businessId, currentPlan }: { businessId
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function upgrade(plan: "FREE" | "VERIFIED" | "FEATURED") {
+  async function upgrade(product: "VERIFIED" | "FEATURED") {
     setBusy(true);
     setMessage(null);
     const res = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan, businessId }),
+      body: JSON.stringify({ product, businessId }),
     });
     const data = await res.json().catch(() => ({}));
+    if (res.ok && data.url) {
+      window.location.href = data.url; // off to Stripe Checkout
+      return;
+    }
     setMessage(res.ok ? data.message : data.error ?? "Something went wrong");
     setBusy(false);
     router.refresh();
@@ -35,11 +39,6 @@ export default function UpgradeButtons({ businessId, currentPlan }: { businessId
         {currentPlan !== "FEATURED" && (
           <button disabled={busy} onClick={() => upgrade("FEATURED")} className={`${btn} bg-amber-500 text-white hover:bg-amber-600`}>
             Feature £4.99/mo
-          </button>
-        )}
-        {currentPlan !== "FREE" && (
-          <button disabled={busy} onClick={() => upgrade("FREE")} className={`${btn} border border-neutral-300 text-neutral-500 hover:text-neutral-700`}>
-            Downgrade to Free
           </button>
         )}
       </div>
