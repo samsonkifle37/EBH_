@@ -44,7 +44,8 @@ model Business {
   featured          Boolean   @default(false)
   plan              String    @default("FREE") // FREE | VERIFIED | FEATURED
   status            String    @default("PENDING") // PENDING | APPROVED | REJECTED
-  ownerId           String?
+  ownerId           String? // verified owner — only set on admin approval / paid claim
+  submittedById     String? // creator of an owner-submitted listing (no owner benefits until approved)
   claimedAt         DateTime?
   createdAt         DateTime  @default(now())
 

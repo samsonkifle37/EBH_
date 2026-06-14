@@ -5,6 +5,7 @@ import { requireAdminApi } from "@/lib/adminGuard";
 import { getSession } from "@/lib/session";
 import { claimTransition, canActOnClaim, type ClaimStatus, type ClaimAction } from "@/lib/domain/claim";
 import { stripeConfigured, PRODUCTS } from "@/lib/payments/stripe";
+import { devFallbackAllowed } from "@/lib/payments/config";
 import { grantClaimOwnership } from "@/lib/payments/grant";
 
 const schema = z.object({ action: z.enum(["approve", "reject", "request_more_evidence"]) });
@@ -38,7 +39,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       where: { id },
       data: { status: "approved", reviewedAt: new Date(), reviewedBy: session?.userId ?? null },
     });
-    if (!stripeConfigured()) {
+    if (!stripeConfigured() && devFallbackAllowed()) {
       await grantClaimOwnership(id, PRODUCTS.CLAIM.amountPence);
       return NextResponse.json({ ok: true, status: nextStatus, ownershipGranted: true, devMode: true });
     }

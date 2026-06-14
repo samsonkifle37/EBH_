@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, createSessionCookie } from "@/lib/session";
-import { addRole } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { slugify } from "@/lib/domain/slug";
 import { businessInputSchema, HOUR_PRESETS } from "@/lib/validation";
 
@@ -39,8 +38,10 @@ export async function POST(req: Request) {
       }),
       openingHours: HOUR_PRESETS[d.hoursPreset] ?? "{}",
       status: "PENDING",
-      ownerId: session.userId,
-      claimedAt: new Date(),
+      // The creator may manage this pending listing, but gets NO owner benefits
+      // (no ownerId, no BUSINESS_OWNER role, no +20 owner trust) until an admin
+      // approves it. ownerId/role are granted on approval (admin/businesses route).
+      submittedById: session.userId,
       sourceType: "owner_submitted",
       sourceId: `submission-${session.userId}-${slug}`,
       photos: { create: d.photoUrls.map((url, i) => ({ url, sortOrder: i })) },
@@ -49,9 +50,6 @@ export async function POST(req: Request) {
       },
     },
   });
-
-  const roles = await addRole(session.userId, "BUSINESS_OWNER");
-  await createSessionCookie({ userId: session.userId, name: session.name, roles });
 
   return NextResponse.json({ ok: true, id: business.id, slug: business.slug });
 }

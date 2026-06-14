@@ -9,16 +9,20 @@ export async function requireOwner(next = "/owner"): Promise<Session> {
   return session;
 }
 
-/** Load a business the current user owns, or 404. */
+/**
+ * Load a business the current user manages — either the verified owner or the
+ * creator of a still-pending submission, or 404. Submitters can manage their
+ * pending listing but hold no owner benefits until an admin approves it.
+ */
 export async function getOwnedBusiness(id: string, userId: string) {
   const business = await db.business.findUnique({ where: { id } });
-  if (!business || business.ownerId !== userId) notFound();
+  if (!business || (business.ownerId !== userId && business.submittedById !== userId)) notFound();
   return business;
 }
 
 export async function listOwnedBusinesses(userId: string) {
   return db.business.findMany({
-    where: { ownerId: userId },
+    where: { OR: [{ ownerId: userId }, { submittedById: userId }] },
     orderBy: { name: "asc" },
     include: { _count: { select: { reviews: true, photos: true } } },
   });

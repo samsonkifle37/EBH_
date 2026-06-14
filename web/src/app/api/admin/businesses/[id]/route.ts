@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdminApi } from "@/lib/adminGuard";
+import { addRole } from "@/lib/auth";
 import { CATEGORIES, CITIES } from "@/lib/types";
 
 const schema = z.object({
@@ -78,8 +79,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ ok: true });
   }
 
+  // Approving an owner-submitted listing grants ownership + the BUSINESS_OWNER
+  // role to its creator (this is the point at which owner trust applies).
+  if (a.action === "approve") {
+    const biz = await db.business.findUnique({ where: { id }, select: { ownerId: true, submittedById: true, verificationLevel: true } });
+    if (!biz) return NextResponse.json({ error: "Business not found" }, { status: 404 });
+    if (biz.submittedById && !biz.ownerId) {
+      await db.business.update({
+        where: { id },
+        data: { status: "APPROVED", ownerId: biz.submittedById, claimedAt: new Date(), verificationLevel: Math.max(biz.verificationLevel, 1) },
+      });
+      await addRole(biz.submittedById, "BUSINESS_OWNER");
+      return NextResponse.json({ ok: true, ownershipGranted: true });
+    }
+    await db.business.update({ where: { id }, data: { status: "APPROVED" } });
+    return NextResponse.json({ ok: true });
+  }
+
   const data =
-    a.action === "approve" ? { status: "APPROVED" } :
     a.action === "reject" ? { status: "REJECTED" } :
     a.action === "feature" ? { featured: true } :
     a.action === "unfeature" ? { featured: false } :

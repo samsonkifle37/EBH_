@@ -31,6 +31,9 @@ export default function OwnedBusinessList({ businesses }: { businesses: Owned[] 
             <Link href={`/owner/business/${b.id}`} className="font-semibold text-neutral-900 hover:text-emerald-700">{b.name}</Link>
             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-500">{b.plan}</span>
           </div>
+          {b.status !== "APPROVED" && (
+            <span className="mt-1 inline-block rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Pending approval</span>
+          )}
           <p className="mt-0.5 text-xs text-neutral-400">{b.category} · {b.city} · {b.status}</p>
           <p className="mt-2 text-xs text-neutral-500">{b._count.reviews} reviews · {b._count.photos} photos</p>
           <div className="mt-3 flex gap-3 text-sm">

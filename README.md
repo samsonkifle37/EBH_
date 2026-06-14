@@ -156,6 +156,25 @@ Tracked events: listing views, phone/website/direction/share/booking clicks
 chart, and a "top interactions" breakdown. Share/Directions buttons on the
 public listing generate the new event types.
 
+## Privilege model & production safety
+
+Ownership and paid benefits cannot be obtained without admin approval or a Stripe
+webhook:
+
+- **Self-created listings** (`POST /api/businesses`) set `submittedById` (the
+  creator can edit/manage the pending listing) but **not** `ownerId` — so no
+  `BUSINESS_OWNER` role and no +20 owner trust. An admin approving the listing
+  (`/api/admin/businesses/[id]` action `approve`) grants ownership + role at that
+  point; only then does owner trust apply.
+- **Claims** grant ownership only on admin approval + Stripe-paid webhook
+  (dev-mode grant outside production).
+- **Subscriptions / featured / plan** change only via the signed Stripe webhook
+  (or admin `feature` action).
+- **Fail-fast**: `src/instrumentation.ts` calls `assertStripeProductionConfig()`
+  at startup — in `NODE_ENV=production` the server refuses to boot unless all
+  Stripe env vars are present. Dev-mode payment fallbacks are additionally gated
+  by `devFallbackAllowed()` so they can never run in production.
+
 ## Payments (Stripe — Milestone B)
 
 Real Stripe Checkout + webhooks, activated by env (dev-mode fallback otherwise):

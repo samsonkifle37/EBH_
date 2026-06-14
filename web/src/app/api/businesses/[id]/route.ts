@@ -10,7 +10,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const business = await db.business.findUnique({ where: { id } });
   if (!business) return NextResponse.json({ error: "Business not found" }, { status: 404 });
-  if (business.ownerId !== session.userId && !hasRole(session, "ADMIN")) {
+  const manages = business.ownerId === session.userId || business.submittedById === session.userId || hasRole(session, "ADMIN");
+  if (!manages) {
     return NextResponse.json({ error: "You don't manage this business" }, { status: 403 });
   }
 

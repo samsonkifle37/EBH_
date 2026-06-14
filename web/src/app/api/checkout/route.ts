@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { PRODUCTS, isProductKey, stripeConfigured, getStripe, priceId, siteUrl, type ProductKey } from "@/lib/payments/stripe";
+import { devFallbackAllowed } from "@/lib/payments/config";
 import { grantClaimOwnership } from "@/lib/payments/grant";
 
 const schema = z.object({
@@ -43,6 +44,11 @@ export async function POST(req: Request) {
 
   // ---- dev-mode fallback (no Stripe key): apply immediately ----
   if (!stripeConfigured()) {
+    // Never grant a benefit without Stripe in production (defence in depth — the
+    // server also fails to boot via instrumentation if Stripe env is missing).
+    if (!devFallbackAllowed()) {
+      return NextResponse.json({ error: "Payments are temporarily unavailable" }, { status: 503 });
+    }
     if (product.key === "CLAIM") {
       await grantClaimOwnership(claimId, product.amountPence);
       return NextResponse.json({ devMode: true, message: "Dev mode: ownership granted instantly (no payment taken)." });
