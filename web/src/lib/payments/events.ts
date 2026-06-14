@@ -17,7 +17,7 @@ function str(v: unknown): string {
  * for anything we don't act on (so the webhook still marks it processed).
  */
 export function interpretEvent(event: Stripe.Event): WebhookAction | null {
-  const obj = event.data.object as Record<string, unknown>;
+  const obj = event.data.object as unknown as Record<string, unknown>;
 
   switch (event.type) {
     case "checkout.session.completed": {
