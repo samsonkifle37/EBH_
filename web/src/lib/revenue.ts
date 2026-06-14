@@ -26,7 +26,7 @@ export async function getRevenueSnapshot(): Promise<RevenueSnapshot> {
     db.subscription.count({ where: { status: "active", planType: "VERIFIED" } }),
     db.subscription.count({ where: { status: "active", planType: "FEATURED" } }),
     db.subscription.count({ where: { status: "active", planType: "AI_TOOLKIT" } }),
-    db.payment.findMany({ where: { paymentStatus: "paid" }, select: { kind: true, amount: true } }),
+    db.payment.findMany({ where: { status: "paid" }, select: { kind: true, amount: true } }),
   ]);
 
   const mrrPence = activeSubs.reduce((a, s) => a + s.amount, 0);

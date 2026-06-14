@@ -207,6 +207,41 @@ model BusinessAnalyticsDaily {
   @@index([businessId, date])
 }
 
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  type       String // LISTING_VIEW | PHONE_CLICK | WEBSITE_CLICK | DIRECTION_CLICK | SHARE_CLICK | BOOKING_CLICK | EVENT_VIEW | TICKET_CLICK | SEARCH_IMPRESSION
+  businessId String?
+  eventId    String?
+  createdAt  DateTime @default(now())
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  event    Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([type, businessId, createdAt])
+  @@index([type, eventId, createdAt])
+}
+
+model Ad {
+  id        String    @id @default(cuid())
+  placement String // HOME_HERO | SEARCH_RESULTS | BUSINESS_DETAIL | EVENT_DETAIL
+  imageUrl  String    @default("")
+  headline  String
+  body      String    @default("")
+  targetUrl String
+  active    Boolean   @default(true)
+  startsAt  DateTime  @default(now())
+  endsAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([placement, active])
+}
+
+model ProcessedStripeEvent {
+  id        String   @id // Stripe event id (evt_...)
+  type      String
+  createdAt DateTime @default(now())
+}
+
 model ImportJob {
   id         String    @id @default(cuid())
   type       String // google_places | companies_house | openstreetmap

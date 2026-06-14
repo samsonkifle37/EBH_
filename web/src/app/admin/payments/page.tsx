@@ -40,7 +40,7 @@ export default async function PaymentsPage() {
                   <td className="px-4 py-3 font-medium text-neutral-800">{p.kind}</td>
                   <td className="px-4 py-3 text-neutral-500">{p.planType || "—"}</td>
                   <td className="px-4 py-3">{gbp(p.amount)}</td>
-                  <td className="px-4 py-3">{p.paymentStatus}</td>
+                  <td className="px-4 py-3">{p.status}</td>
                   <td className="px-4 py-3 text-neutral-400">{p.createdAt.toLocaleDateString("en-GB")}</td>
                 </tr>
               ))}

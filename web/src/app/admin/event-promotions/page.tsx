@@ -43,8 +43,8 @@ export default async function EventPromotionsPage() {
         <ul className="mt-3 space-y-2">
           {promotions.map((p) => (
             <li key={p.id} className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm">
-              <span className="font-medium text-neutral-800">{p.packageTier}</span>
-              <span className="text-neutral-500">{gbp(p.amount)} · {p.status} · {p.impressions} impressions / {p.clicks} clicks</span>
+              <span className="font-medium text-neutral-800">{p.package}</span>
+              <span className="text-neutral-500">{gbp(p.amount)} · {p.status} · {p.paymentStatus}</span>
             </li>
           ))}
         </ul>
