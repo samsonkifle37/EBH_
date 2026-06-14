@@ -77,6 +77,16 @@ describe("computeTrustV2", () => {
     expect(Math.min(100, sum)).toBe(100);
   });
 
+  it("only credits Owner claimed when ownership is granted (approved claim)", () => {
+    // a pending claim does not set ownership, so ownerClaimed stays false → no +20
+    const pending = computeTrustV2({ ...empty, ownerClaimed: false });
+    expect(pending.score).toBe(0);
+    // an approved claim sets ownership → +20
+    const approved = computeTrustV2({ ...empty, ownerClaimed: true });
+    expect(approved.score).toBe(20);
+    expect(approved.breakdown).toContainEqual({ label: "Owner claimed", points: 20 });
+  });
+
   it("returns only non-zero breakdown rows, each with a label", () => {
     const r = computeTrustV2({ ...empty, ownerClaimed: true, phone: true });
     expect(r.breakdown).toEqual([

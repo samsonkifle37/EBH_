@@ -156,6 +156,28 @@ Tracked events: listing views, phone/website/direction/share/booking clicks
 chart, and a "top interactions" breakdown. Share/Directions buttons on the
 public listing generate the new event types.
 
+## Ownership & monetisation foundation (pre-Stripe)
+
+Claiming is **admin-reviewed**, not instant: a signed-in user submits an
+evidence form on `/claim/[slug]` → a `ClaimRequest` is created
+(`status=pending`, `paymentStatus=pending_payment`, **no ownership change**) →
+an admin reviews at `/admin/claims` and approves / rejects / requests more
+evidence. Only **approve** sets `business.ownerId`, grants the `BUSINESS_OWNER`
+role, and (via Trust V2's owner-claimed factor) adds +20 trust. Claiming is free
+for now; payment wires in with Stripe (Milestone B).
+
+Owners manage their listings under `/owner` (`/owner/businesses`,
+`/owner/business/[id]` + `/analytics` + `/reviews`), gated to
+`business.ownerId === session.userId`. No claimed business → an empty state
+pointing them to find and claim one.
+
+Founder/admin money views: `/admin/revenue` (MRR, ARR, subscribers, revenue by
+stream — real DB queries, all £0 until billing is on), `/admin/payments`,
+`/admin/event-promotions`. Future-ready tables exist and are unwired:
+`Subscription`, `Payment`, `FeaturedSubscription`, `EventPromotion`,
+`AdCampaign`, `AiToolkitSubscription` (Stripe columns already present so
+Milestone B needs no migration).
+
 ## Auto-approval review buckets
 
 New OSM imports auto-publish only when every gate passes (image, contact, valid
