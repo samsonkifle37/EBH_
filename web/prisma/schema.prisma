@@ -246,7 +246,9 @@ model ClaimRequest {
   @@index([status, createdAt])
 }
 
-// --- Monetisation (future-ready; not wired to Stripe yet) ---
+// --- Monetisation (future-ready; NOT wired to Stripe yet) ---
+// Amounts are integer pence; currency defaults to GBP. stripe* columns are
+// nullable and present now so Stripe Milestone B needs no further migration.
 
 model Subscription {
   id                   String    @id @default(cuid())
@@ -254,35 +256,40 @@ model Subscription {
   userId               String?
   planType             String // VERIFIED | FEATURED | AI_TOOLKIT
   status               String    @default("pending") // pending | active | past_due | cancelled
-  paymentStatus        String    @default("pending") // pending | paid | failed | refunded | cancelled
-  amount               Int       @default(0) // pence
+  amount               Int       @default(0) // monthly price in pence
   currency             String    @default("gbp")
+  interval             String    @default("month") // month | year
+  paymentStatus        String    @default("pending") // pending | paid | failed | refunded | cancelled
   startDate            DateTime?
   endDate              DateTime?
-  currentPeriodEnd     DateTime?
   stripeCustomerId     String?
   stripeSubscriptionId String?
+  stripePriceId        String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @default(now()) @updatedAt
 
   @@index([status, planType])
+  @@index([businessId])
 }
 
 model Payment {
-  id            String   @id @default(cuid())
-  businessId    String?
-  userId        String?
-  kind          String // subscription | claim | event_promotion | ad | ai_toolkit
-  planType      String   @default("")
-  status        String   @default("pending") // alias of paymentStatus for queries
-  paymentStatus String   @default("pending") // pending | paid | failed | refunded | cancelled
-  amount        Int      @default(0) // pence
-  currency      String   @default("gbp")
-  stripePaymentId String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  id                    String    @id @default(cuid())
+  businessId            String?
+  userId                String?
+  kind                  String // subscription | claim | event_promotion | ad | ai_toolkit
+  planType              String    @default("")
+  status                String    @default("pending") // pending | paid | failed | refunded | cancelled
+  amount                Int       @default(0) // in pence
+  currency              String    @default("gbp")
+  startDate             DateTime?
+  endDate               DateTime?
+  stripePaymentIntentId String?
+  stripeChargeId        String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now()) @updatedAt
 
-  @@index([kind, paymentStatus])
+  @@index([kind, status])
+  @@index([businessId])
 }
 
 model FeaturedSubscription {
@@ -290,16 +297,18 @@ model FeaturedSubscription {
   businessId    String?
   userId        String?
   planType      String    @default("FEATURED")
-  status        String    @default("pending")
-  paymentStatus String    @default("pending")
+  status        String    @default("pending") // pending | active | cancelled
   amount        Int       @default(0)
   currency      String    @default("gbp")
+  placement     String    @default("") // optional priority placement key
+  paymentStatus String    @default("pending") // pending | paid | failed | refunded | cancelled
   startDate     DateTime?
   endDate       DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
 
   @@index([status])
+  @@index([businessId])
 }
 
 model EventPromotion {
@@ -307,32 +316,31 @@ model EventPromotion {
   eventId       String?
   businessId    String?
   userId        String?
-  planType      String    @default("EVENT_PROMOTION")
-  packageTier   String    @default("BRONZE") // BRONZE | SILVER | GOLD
-  status        String    @default("pending")
-  paymentStatus String    @default("pending")
+  planType      String    @default("")
+  package       String    @default("BRONZE") // BRONZE | SILVER | GOLD
+  status        String    @default("pending") // pending | active | expired | cancelled
   amount        Int       @default(0)
   currency      String    @default("gbp")
-  impressions   Int       @default(0)
-  clicks        Int       @default(0)
+  paymentStatus String    @default("pending") // pending | paid | failed | refunded | cancelled
   startDate     DateTime?
   endDate       DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
 
-  @@index([status, packageTier])
+  @@index([status])
+  @@index([eventId])
 }
 
 model AdCampaign {
   id            String    @id @default(cuid())
   businessId    String?
   userId        String?
-  planType      String    @default("AD")
-  placement     String    @default("") // HOME_HERO | SEARCH_RESULTS | ...
-  status        String    @default("pending")
-  paymentStatus String    @default("pending")
+  planType      String    @default("")
+  placement     String    @default("") // HOME_HERO | SEARCH_RESULTS | BUSINESS_DETAIL | EVENT_DETAIL
+  status        String    @default("pending") // pending | active | paused | ended
   amount        Int       @default(0)
   currency      String    @default("gbp")
+  paymentStatus String    @default("pending") // pending | paid | failed | refunded | cancelled
   impressions   Int       @default(0)
   clicks        Int       @default(0)
   startDate     DateTime?
@@ -341,6 +349,7 @@ model AdCampaign {
   updatedAt     DateTime  @default(now()) @updatedAt
 
   @@index([status, placement])
+  @@index([businessId])
 }
 
 model AiToolkitSubscription {
@@ -348,43 +357,15 @@ model AiToolkitSubscription {
   businessId    String?
   userId        String?
   planType      String    @default("AI_TOOLKIT")
-  status        String    @default("pending")
-  paymentStatus String    @default("pending")
+  status        String    @default("pending") // pending | active | cancelled
   amount        Int       @default(0)
   currency      String    @default("gbp")
+  paymentStatus String    @default("pending") // pending | paid | failed | refunded | cancelled
   startDate     DateTime?
   endDate       DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
 
   @@index([status])
-}
-
-model AnalyticsEvent {
-  id         String   @id @default(cuid())
-  type       String // LISTING_VIEW | PHONE_CLICK | WEBSITE_CLICK | EVENT_VIEW | TICKET_CLICK | SEARCH_IMPRESSION
-  businessId String?
-  eventId    String?
-  createdAt  DateTime @default(now())
-
-  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  event    Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  @@index([type, businessId, createdAt])
-  @@index([type, eventId, createdAt])
-}
-
-model Ad {
-  id        String   @id @default(cuid())
-  placement String // HOME_HERO | SEARCH_RESULTS | BUSINESS_DETAIL | EVENT_DETAIL
-  imageUrl  String   @default("")
-  headline  String
-  body      String   @default("")
-  targetUrl String
-  active    Boolean  @default(true)
-  startsAt  DateTime @default(now())
-  endsAt    DateTime?
-  createdAt DateTime @default(now())
-
-  @@index([placement, active])
+  @@index([businessId])
 }
