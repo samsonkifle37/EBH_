@@ -34,7 +34,7 @@ export default async function Header() {
                 <Link href="/dashboard/events" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 sm:block">My Events</Link>
               )}
               {hasRole(session, "BUSINESS_OWNER") && (
-                <Link href="/dashboard" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 sm:block">Dashboard</Link>
+                <Link href="/owner" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 sm:block">My Businesses</Link>
               )}
               <Link href="/account" className="rounded-lg px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100">
                 {session.name.split(" ")[0]}

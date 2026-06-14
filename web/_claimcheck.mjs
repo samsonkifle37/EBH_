@@ -1,0 +1,11 @@
+import { claimTransition, CLAIM_STATUSES } from "./src/lib/domain/claim.ts";
+const eq=(a,b,m)=>{ if(JSON.stringify(a)!==JSON.stringify(b)) throw new Error("FAIL "+m); console.log("ok",m); };
+const throws=(f,m)=>{ try{f();}catch{console.log("ok",m);return;} throw new Error("FAIL expected throw "+m); };
+eq(claimTransition("pending","approve"),"approved","pending->approve");
+eq(claimTransition("pending","reject"),"rejected","pending->reject");
+eq(claimTransition("pending","request_more_evidence"),"needs_more_evidence","pending->rme");
+eq(claimTransition("needs_more_evidence","approve"),"approved","nme->approve");
+throws(()=>claimTransition("approved","reject"),"approved terminal");
+throws(()=>claimTransition("pending","explode"),"unknown action");
+eq(CLAIM_STATUSES,["pending","approved","rejected","needs_more_evidence"],"status set");
+console.log("ALL CLAIM TESTS PASS");
