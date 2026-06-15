@@ -89,6 +89,7 @@ model Business {
   analyticsEvents AnalyticsEvent[]
   sources         BusinessSource[]
   analyticsDaily  BusinessAnalyticsDaily[]
+  prideEvents     PrideEvent[]
 
   @@index([category, city, status])
   @@index([sourceType, status])
@@ -234,6 +235,39 @@ model AnalyticsEvent {
 
   @@index([type, businessId, createdAt])
   @@index([type, eventId, createdAt])
+}
+
+// --- Pride measurement layer (North-Star: Share Rate) ---
+// Canonical, richly-attributed event stream for the "pride loop". Single source
+// of truth for the Share Rate KPI (claimed businesses with >=1 distribution
+// share / total claimed) and all owner/admin pride analytics. Context fields
+// (city/category/trustScore/completionScore/ownerUserId) are resolved
+// server-side at write time so reads are pure aggregation with no extra joins.
+model PrideEvent {
+  id              String   @id @default(cuid())
+  action          String // CLAIM_APPROVED | PROFILE_VIEW | SHARE_KIT_OPENED | SHARE_IMAGE_GENERATED | SHARE_DOWNLOAD | SHARE_COPY_LINK | SHARE_WHATSAPP | SHARE_INSTAGRAM | SHARE_QR_SCAN | CONTACT_CLICK | WEBSITE_CLICK | DIRECTIONS_CLICK
+  businessId      String?
+  ownerUserId     String? // business owner at write time (nullable until claimed)
+  visitorId       String   @default("") // anonymous first-party UUID; "system" for server events
+  channel         String   @default("") // whatsapp | instagram | qr | copy_link | download | web_share | direct
+  asset           String   @default("") // card | story | poster | ""
+  city            String   @default("")
+  category        String   @default("")
+  trustScore      Int      @default(0)
+  completionScore Int      @default(0)
+  referrer        String   @default("")
+  utmSource       String   @default("")
+  utmMedium       String   @default("")
+  utmCampaign     String   @default("")
+  dedupeKey       String?  @unique // idempotency: retried/duplicate events collapse
+  createdAt       DateTime @default(now())
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([action, createdAt])
+  @@index([businessId, action])
+  @@index([businessId, visitorId])
+  @@index([createdAt])
 }
 
 model Ad {

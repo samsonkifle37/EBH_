@@ -1,8 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { recordPrideEvent } from "@/lib/analytics/record";
+import { VISITOR_COOKIE, ATTRIBUTION_COOKIE, parseAttribution } from "@/lib/analytics/attribution";
+import { isShareChannel } from "@/lib/analytics/events";
 import { aggregateRating } from "@/lib/domain/ratings";
 import { isOpenNow, parseOpeningHours } from "@/lib/domain/hours";
 import { trustV2ForBusiness } from "@/lib/trust";
@@ -63,8 +67,20 @@ export default async function BusinessPage({ params }: Props) {
   if (!business || business.status !== "APPROVED") notFound();
   if (business.sourceType === "demo" && !allowDemoData()) notFound();
 
-  // record listing view (fire and forget)
+  // record listing view (fire and forget) — legacy analytics dashboard feed
   void db.analyticsEvent.create({ data: { type: "LISTING_VIEW", businessId: business.id } }).catch(() => {});
+
+  // pride loop: attributed profile view (+ inbound QR scan when applicable)
+  {
+    const jar = await cookies();
+    const visitorId = jar.get(VISITOR_COOKIE)?.value || "anon";
+    const attribution = parseAttribution(jar.get(ATTRIBUTION_COOKIE)?.value);
+    const channel = attribution && isShareChannel(attribution.channel) ? attribution.channel : "direct";
+    void recordPrideEvent({ action: "PROFILE_VIEW", businessId: business.id, visitorId, channel });
+    if (attribution?.channel === "qr") {
+      void recordPrideEvent({ action: "SHARE_QR_SCAN", businessId: business.id, visitorId, channel: "qr" });
+    }
+  }
 
   const { avg, count } = aggregateRating(business.reviews);
   const hours = parseOpeningHours(business.openingHours);
@@ -216,7 +232,7 @@ export default async function BusinessPage({ params }: Props) {
                 ✍ Write a review
               </Link>
             )}
-            <ShareButton businessId={business.id} title={business.name} />
+            <ShareButton businessId={business.id} title={business.name} slug={business.slug} />
             {business.lat && business.lng && (
               <TrackedLink
                 href={`https://www.openstreetmap.org/directions?to=${business.lat}%2C${business.lng}`}

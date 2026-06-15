@@ -1,9 +1,23 @@
 import Link from "next/link";
 import { requireOwner, getOwnedBusiness } from "@/lib/ownerGuard";
+import { db } from "@/lib/db";
 import { rollupDaily } from "@/lib/analytics/rollup";
 import { getBusinessAnalytics } from "@/lib/analytics/summary";
+import { getBusinessShareMetrics, getPlatformPride, getCategoryShareRate } from "@/lib/analytics/prideMetrics";
+import { ownerInsights } from "@/lib/analytics/shareMetrics";
+import { profileCompletion } from "@/lib/domain/profileCompletion";
 import AnalyticsCards from "@/components/AnalyticsCards";
 import TrendChart from "@/components/TrendChart";
+import PrideAnalytics from "@/components/PrideAnalytics";
+
+function signatureCount(json: string): number {
+  try {
+    const v = JSON.parse(json);
+    return Array.isArray(v) ? v.filter((s) => s && (s.title || s.imageUrl)).length : 0;
+  } catch {
+    return 0;
+  }
+}
 
 export const metadata = { title: "Listing analytics" };
 
@@ -24,6 +38,34 @@ export default async function OwnerAnalytics({
 
   await rollupDaily({ businessId: id });
   const a = await getBusinessAnalytics(id, days);
+
+  // --- Pride Analytics (share loop) ---
+  const [share, platform, categoryRate, photoCount] = await Promise.all([
+    getBusinessShareMetrics(id),
+    getPlatformPride(),
+    getCategoryShareRate(business.category),
+    db.businessPhoto.count({ where: { businessId: id } }),
+  ]);
+  const completion = profileCompletion({
+    coverImageUrl: business.coverImageUrl,
+    founderPhotoUrl: business.founderPhotoUrl,
+    founderStory: business.founderStory,
+    brandStory: business.brandStory,
+    signatureCount: signatureCount(business.signatureItems),
+    phone: business.phone,
+    website: business.website,
+    hoursJson: business.openingHours,
+    photoCount,
+  }).score;
+  const insights = ownerInsights({
+    hasShared: share.hasShared,
+    totalShares: share.totalShares,
+    shareViews: share.shareViews,
+    shareContacts: share.shareContacts,
+    completionScore: completion,
+    platformShareRate: platform.shareRate,
+    categoryShareRate: categoryRate,
+  });
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
@@ -48,6 +90,16 @@ export default async function OwnerAnalytics({
         </div>
       </div>
 
+      <PrideAnalytics
+        businessId={id}
+        share={share}
+        platformShareRate={platform.shareRate}
+        categoryShareRate={categoryRate}
+        completion={completion}
+        insights={insights}
+      />
+
+      <h2 className="mt-10 text-sm font-bold uppercase tracking-wide text-neutral-400">Views &amp; clicks</h2>
       <div className="mt-4">
         <AnalyticsCards
           stats={[

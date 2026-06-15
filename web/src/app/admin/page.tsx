@@ -24,6 +24,7 @@ export default async function AdminPage() {
     { href: "/admin/claims", title: "Claims", desc: "Review ownership claims; approve to transfer ownership", badge: pendingClaims },
     { href: "/admin/events", title: "Events", desc: "Approve and feature community events", badge: pendingEvents },
     { href: "/admin/reviews", title: "Reviews", desc: "Moderate abusive or fake reviews", badge: 0 },
+    { href: "/admin/pride", title: "Pride & Sharing", desc: "North-Star Share Rate, channels and what drives owners to share", badge: 0 },
     { href: "/admin/revenue", title: "Revenue", desc: "MRR, ARR and revenue by stream (live once billing is on)", badge: 0 },
     { href: "/admin/payments", title: "Payments", desc: "All payments across subscriptions, claims, ads and promotions", badge: 0 },
     { href: "/admin/ads", title: "Advertising", desc: "Manage banner campaigns across all placements", badge: 0 },

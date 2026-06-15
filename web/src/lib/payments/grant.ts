@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { addRole } from "@/lib/auth";
+import { recordPrideEvent } from "@/lib/analytics/record";
 
 /**
  * Grant ownership for a paid/approved claim. Single source of truth used by the
@@ -35,6 +36,14 @@ export async function grantClaimOwnership(claimId: string, amountPence: number):
     }),
   ]);
   await addRole(claim.userId, "BUSINESS_OWNER");
+
+  // pride loop: a newly-claimed business enters the Share Rate denominator.
+  void recordPrideEvent({
+    action: "CLAIM_APPROVED",
+    businessId: claim.businessId,
+    visitorId: "system",
+    dedupeKey: `claim_approved:${claim.businessId}`,
+  });
 
   // record the claim payment once (dedupe by claim id in metadata-free schema)
   const existing = await db.payment.findFirst({ where: { kind: "claim", businessId: claim.businessId, userId: claim.userId, status: "paid" } });

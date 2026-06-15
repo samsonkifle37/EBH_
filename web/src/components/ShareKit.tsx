@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { track } from "@/lib/analytics/client";
+import { shareParams } from "@/lib/analytics/attribution";
 
 const ASSETS = [
   { type: "card", label: "Profile card", hint: "Great for posts, WhatsApp and LinkedIn", ratio: "aspect-[1200/630]" },
@@ -11,30 +13,36 @@ const ASSETS = [
 export default function ShareKit({ businessId, slug, name, publicUrl }: { businessId: string; slug: string; name: string; publicUrl: string }) {
   const [copied, setCopied] = useState(false);
 
-  function track() {
-    fetch("/api/track", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "SHARE_CLICK", businessId }),
-    }).catch(() => {});
+  // Opening the kit is intent — useful funnel signal, not a distribution share.
+  useEffect(() => {
+    track("SHARE_KIT_OPENED", { businessId });
+  }, [businessId]);
+
+  function linkFor(channel: string) {
+    return `${publicUrl}?${shareParams(slug, channel)}`;
   }
 
-  const message = `Proud member of Ethiopian Business Hub UK — check out ${name}: ${publicUrl}`;
+  const waMessage = `Proud member of Ethiopian Business Hub UK — check out ${name}: ${linkFor("whatsapp")}`;
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => { track(); navigator.clipboard.writeText(publicUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+          onClick={() => {
+            track("SHARE_COPY_LINK", { businessId, channel: "copy_link" });
+            navigator.clipboard.writeText(linkFor("copy_link"));
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
           className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 hover:border-emerald-600 hover:text-emerald-700"
         >
           {copied ? "Link copied ✓" : "Copy profile link"}
         </button>
         <a
-          href={`https://wa.me/?text=${encodeURIComponent(message)}`}
+          href={`https://wa.me/?text=${encodeURIComponent(waMessage)}`}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={track}
+          onClick={() => track("SHARE_WHATSAPP", { businessId, channel: "whatsapp" })}
           className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
         >
           Share on WhatsApp
@@ -53,7 +61,7 @@ export default function ShareKit({ businessId, slug, name, publicUrl }: { busine
             <a
               href={`/api/share/${slug}/${a.type}`}
               download={`${slug}-${a.type}.png`}
-              onClick={track}
+              onClick={() => track("SHARE_DOWNLOAD", { businessId, channel: "download", asset: a.type })}
               className="mt-3 inline-block rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800"
             >
               Download

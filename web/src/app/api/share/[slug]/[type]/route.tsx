@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { earnedBadges } from "@/lib/domain/badges";
 import { CITY_LABELS, isCity, type City } from "@/lib/types";
 import { siteUrl } from "@/lib/payments/stripe";
+import { recordPrideEvent } from "@/lib/analytics/record";
+import { shareParams } from "@/lib/analytics/attribution";
 
 export const runtime = "nodejs"; // Prisma + qrcode need Node
 
@@ -19,15 +21,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
   const business = await db.business.findUnique({
     where: { slug },
-    select: { name: true, city: true, status: true, ownerId: true, claimedAt: true, verificationLevel: true, plan: true },
+    select: { id: true, name: true, city: true, status: true, ownerId: true, claimedAt: true, verificationLevel: true, plan: true },
   });
   if (!business || business.status !== "APPROVED") {
     return new Response("Not found", { status: 404 });
   }
 
+  // An asset was generated — funnel signal (intent), not a distribution share.
+  void recordPrideEvent({ action: "SHARE_IMAGE_GENERATED", businessId: business.id, visitorId: "system", asset: type });
+
   const cityLabel = isCity(business.city) ? CITY_LABELS[business.city as City] : business.city;
   const topBadge = earnedBadges(business)[0]?.label ?? "On Ethiopian Business Hub";
-  const profileUrl = `${siteUrl()}/business/${slug}`;
+  // QR carries share attribution so scans land as channel=qr and convert to views.
+  const profileUrl = `${siteUrl()}/business/${slug}?${shareParams(slug, "qr")}`;
   const qr = await QRCode.toDataURL(profileUrl, { margin: 1, width: 320, color: { dark: "#0a0a0a", light: "#ffffff" } });
 
   const vertical = type !== "card";
