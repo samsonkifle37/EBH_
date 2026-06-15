@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getSession, hasRole } from "@/lib/session";
+import { NU_URL } from "@/lib/nu";
 import SignOutButton from "@/components/SignOutButton";
 
 export default async function Header() {
@@ -25,6 +26,15 @@ export default async function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Always-visible NU CTA — NU app is the primary conversion goal */}
+          <a
+            href={NU_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl bg-neutral-900 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-neutral-800"
+          >
+            Download NU
+          </a>
           {session ? (
             <>
               {hasRole(session, "ADMIN") && (

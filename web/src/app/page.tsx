@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NU_URL } from "@/lib/nu";
 import { getFeaturedBusinesses } from "@/lib/queries/businesses";
 import { getUpcomingEvents } from "@/lib/queries/events";
 import BusinessCard from "@/components/BusinessCard";
@@ -48,12 +49,29 @@ export default async function HomePage() {
       <section className="border-b border-neutral-200 bg-gradient-to-b from-emerald-50/60 via-white to-white">
         <div className="mx-auto max-w-6xl px-4 py-16 text-center sm:py-20">
           <h1 className="mx-auto max-w-3xl text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-5xl">
-            Discover Ethiopian Businesses, Events &amp; Services Across the UK
+            Your connection to Ethiopia starts here.
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-neutral-500">
-            Restaurants, grocery stores, solicitors, beauty salons, weddings and
-            community events — found, rated and verified by the Habesha community.
+            Plan your trip home, discover trusted Ethiopian businesses and events
+            across the UK, and explore Ethiopia with NU — all in one place.
           </p>
+
+          <div className="mx-auto mt-8 flex max-w-xl flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href={NU_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-neutral-800 sm:w-auto"
+            >
+              Explore Ethiopia with NU →
+            </a>
+            <Link
+              href="/businesses"
+              className="w-full rounded-xl border border-neutral-300 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 hover:border-emerald-600 hover:text-emerald-700 sm:w-auto"
+            >
+              Find businesses near you
+            </Link>
+          </div>
 
           <form action="/businesses" method="get" className="mx-auto mt-8 flex max-w-2xl items-center gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg shadow-emerald-900/5">
             <input

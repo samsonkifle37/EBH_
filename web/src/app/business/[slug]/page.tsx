@@ -19,6 +19,7 @@ import TrackedLink from "@/components/TrackedLink";
 import FavoriteButton from "@/components/FavoriteButton";
 import ShareButton from "@/components/ShareButton";
 import AdSlot from "@/components/AdSlot";
+import NuCallout from "@/components/NuCallout";
 import { CATEGORY_LABELS, CITY_LABELS, isCategory, isCity, type Category, type City } from "@/lib/types";
 
 interface Props {
@@ -276,6 +277,8 @@ export default async function BusinessPage({ params }: Props) {
           {business.lat && business.lng && (
             <MapEmbed lat={business.lat} lng={business.lng} name={business.name} />
           )}
+
+          <NuCallout title="Visiting Ethiopia?" body="Discover trusted hotels, tours and experiences — and plan the whole trip with NU." cta="Explore with NU" />
 
           <AdSlot placement="BUSINESS_DETAIL" />
         </aside>

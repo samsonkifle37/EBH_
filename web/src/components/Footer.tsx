@@ -1,9 +1,25 @@
 import Link from "next/link";
+import { NU_URL, NU_APP_STORE_URL } from "@/lib/nu";
 import { CATEGORIES, CATEGORY_LABELS, CITIES, CITY_LABELS } from "@/lib/types";
 
 export default function Footer() {
   return (
     <footer className="mt-16 border-t border-neutral-200 bg-white">
+      {/* NU conversion band — primary goal */}
+      <div className="bg-neutral-900 text-white">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-4 py-8 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-lg font-bold tracking-tight">Planning your next trip to Ethiopia?</p>
+            <p className="mt-1 text-sm text-neutral-300">Download NU — plan, book and explore Ethiopia with trusted local partners.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <a href={NU_APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-white px-4 py-2 font-semibold text-neutral-900 hover:bg-neutral-100">📱 App Store</a>
+            <span className="rounded-xl border border-neutral-700 px-4 py-2 font-medium text-neutral-400">🤖 Google Play — coming soon</span>
+            <a href={NU_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-400 hover:text-emerald-300">🌐 nu-discoverethiopia.com</a>
+          </div>
+        </div>
+      </div>
+
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="text-sm font-bold">Ethiopian Business Hub UK</p>

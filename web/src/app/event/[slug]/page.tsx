@@ -6,6 +6,7 @@ import { allowDemoData } from "@/lib/flags";
 import MapEmbed from "@/components/MapEmbed";
 import TrackedLink from "@/components/TrackedLink";
 import AdSlot from "@/components/AdSlot";
+import NuCallout from "@/components/NuCallout";
 import { CITY_LABELS, EVENT_TYPE_LABELS, isCity, isEventType, type City, type EventType } from "@/lib/types";
 
 interface Props {
@@ -123,6 +124,8 @@ export default async function EventPage({ params }: Props) {
           </div>
 
           {event.lat && event.lng && <MapEmbed lat={event.lat} lng={event.lng} name={event.venueName} />}
+
+          <NuCallout title="Going to Ethiopia soon?" body="Build your itinerary with NU — flights, hotels, tours and the best of home, planned in minutes." cta="Build your itinerary" />
 
           <AdSlot placement="EVENT_DETAIL" />
         </aside>
