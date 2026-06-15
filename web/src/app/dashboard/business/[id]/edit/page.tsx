@@ -21,6 +21,11 @@ export default async function EditBusinessPage({ params }: { params: Promise<{ i
   try {
     socials = JSON.parse(business.socials);
   } catch {}
+  let signatureItems: { title: string; description: string; imageUrl: string }[] = [];
+  try {
+    const v = JSON.parse(business.signatureItems);
+    if (Array.isArray(v)) signatureItems = v;
+  } catch {}
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
@@ -45,6 +50,13 @@ export default async function EditBusinessPage({ params }: { params: Promise<{ i
             instagram: socials.instagram ?? "",
             facebook: socials.facebook ?? "",
             photoUrls: business.photos.map((p) => p.url),
+            coverImageUrl: business.coverImageUrl,
+            founderName: business.founderName,
+            founderPhotoUrl: business.founderPhotoUrl,
+            founderStory: business.founderStory,
+            brandStory: business.brandStory,
+            yearFounded: business.yearFounded,
+            signatureItems,
           }}
         />
       </div>

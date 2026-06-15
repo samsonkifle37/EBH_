@@ -20,6 +20,9 @@ import FavoriteButton from "@/components/FavoriteButton";
 import ShareButton from "@/components/ShareButton";
 import AdSlot from "@/components/AdSlot";
 import NuCallout from "@/components/NuCallout";
+import BadgeRail from "@/components/BadgeRail";
+import BusinessIdentity from "@/components/BusinessIdentity";
+import { earnedBadges } from "@/lib/domain/badges";
 import { CATEGORY_LABELS, CITY_LABELS, isCategory, isCity, type Category, type City } from "@/lib/types";
 
 interface Props {
@@ -85,6 +88,19 @@ export default async function BusinessPage({ params }: Props) {
     sources: business.sources,
   }).score;
   const summary = summarizeReviews(business.reviews.map((r) => `${r.title}. ${r.body}`));
+
+  const badges = earnedBadges({
+    ownerId: business.ownerId,
+    claimedAt: business.claimedAt,
+    verificationLevel: business.verificationLevel,
+    plan: business.plan,
+  });
+  const sourceTypeList = business.sources.map((s) => s.sourceType);
+  let signatureItems: { title?: string; description?: string; imageUrl?: string }[] = [];
+  try {
+    const parsed = JSON.parse(business.signatureItems);
+    if (Array.isArray(parsed)) signatureItems = parsed;
+  } catch {}
   const categoryLabel = isCategory(business.category) ? CATEGORY_LABELS[business.category as Category] : business.category;
   const cityLabel = isCity(business.city) ? CITY_LABELS[business.city as City] : business.city;
 
@@ -145,10 +161,16 @@ export default async function BusinessPage({ params }: Props) {
         <span className="text-neutral-600">{business.name}</span>
       </nav>
 
+      {business.coverImageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={business.coverImageUrl} alt={`${business.name} cover`} className="mb-6 aspect-[3/1] w-full rounded-3xl object-cover" />
+      )}
+
       <Gallery photos={business.photos} name={business.name} />
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
         <div>
+          {badges.length > 0 && <div className="mb-3"><BadgeRail badges={badges} /></div>}
           <div className="flex flex-wrap items-center gap-2">
             {business.featured && <FeaturedBadge />}
             <VerifiedBadge score={score} level={business.verificationLevel} />
@@ -217,6 +239,23 @@ export default async function BusinessPage({ params }: Props) {
               </Link>
             </div>
           )}
+
+          <BusinessIdentity
+            founderName={business.founderName}
+            founderPhotoUrl={business.founderPhotoUrl}
+            founderStory={business.founderStory}
+            brandStory={business.brandStory}
+            yearFounded={business.yearFounded}
+            signatureItems={signatureItems}
+            verification={{
+              ownerClaimed: !!business.ownerId,
+              companiesHouse: business.companyNumber.length > 0 || sourceTypeList.includes("companies_house"),
+              google: business.mapsUrl.length > 0 || sourceTypeList.includes("google_places"),
+              level: business.verificationLevel,
+              lastVerified: business.lastSourceCheckedAt,
+              trustScore: score,
+            }}
+          />
 
           <section className="mt-10">
             <h2 className="text-xl font-bold tracking-tight">Reviews</h2>

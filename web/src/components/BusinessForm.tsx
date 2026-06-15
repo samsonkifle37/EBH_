@@ -4,6 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, CATEGORY_LABELS, CITIES, CITY_LABELS } from "@/lib/types";
 
+export interface SignatureItemValue {
+  title: string;
+  description: string;
+  imageUrl: string;
+}
+
 export interface BusinessFormValues {
   name: string;
   category: string;
@@ -16,6 +22,13 @@ export interface BusinessFormValues {
   instagram: string;
   facebook: string;
   photoUrls: string[];
+  coverImageUrl: string;
+  founderName: string;
+  founderPhotoUrl: string;
+  founderStory: string;
+  brandStory: string;
+  yearFounded: number | null;
+  signatureItems: SignatureItemValue[];
 }
 
 interface Props {
@@ -53,6 +66,19 @@ export default function BusinessForm({ businessId, initial = {} }: Props) {
       facebook: String(form.get("facebook") || ""),
       hoursPreset: String(form.get("hoursPreset") || "none"),
       photoUrls,
+      coverImageUrl: String(form.get("coverImageUrl") || ""),
+      founderName: String(form.get("founderName") || ""),
+      founderPhotoUrl: String(form.get("founderPhotoUrl") || ""),
+      founderStory: String(form.get("founderStory") || ""),
+      brandStory: String(form.get("brandStory") || ""),
+      yearFounded: form.get("yearFounded") ? Number(form.get("yearFounded")) : null,
+      signatureItems: [0, 1, 2]
+        .map((i) => ({
+          title: String(form.get(`sig${i}title`) || ""),
+          imageUrl: String(form.get(`sig${i}img`) || ""),
+          description: String(form.get(`sig${i}desc`) || ""),
+        }))
+        .filter((s) => s.title || s.imageUrl),
     };
     const res = await fetch(businessId ? `/api/businesses/${businessId}` : "/api/businesses", {
       method: businessId ? "PATCH" : "POST",
@@ -142,6 +168,53 @@ export default function BusinessForm({ businessId, initial = {} }: Props) {
         <label className="mb-1 block text-sm font-medium">Photo URLs (one per line, up to 8)</label>
         <textarea name="photoUrls" rows={3} defaultValue={(initial.photoUrls ?? []).join("\n")} className={inputCls} placeholder="https://…/photo1.jpg" />
       </div>
+
+      {/* Boutique profile — the story that makes owners proud to share */}
+      <fieldset className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+        <legend className="px-1 text-sm font-bold text-emerald-900">Your story — make your profile shine ✨</legend>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Cover image URL</label>
+          <input name="coverImageUrl" type="url" defaultValue={initial.coverImageUrl} className={inputCls} placeholder="https://…/cover.jpg" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Founder name</label>
+            <input name="founderName" defaultValue={initial.founderName} className={inputCls} placeholder="Who runs the business?" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Founder photo URL</label>
+            <input name="founderPhotoUrl" type="url" defaultValue={initial.founderPhotoUrl} className={inputCls} placeholder="https://…/founder.jpg" />
+          </div>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Founder story</label>
+          <textarea name="founderStory" rows={3} maxLength={2000} defaultValue={initial.founderStory} className={inputCls} placeholder="Why did you start? What are you proud of?" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Brand story</label>
+            <textarea name="brandStory" rows={3} maxLength={2000} defaultValue={initial.brandStory} className={inputCls} placeholder="What do you do and what makes you special?" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Year founded</label>
+            <input name="yearFounded" type="number" min={1800} max={2100} defaultValue={initial.yearFounded ?? undefined} className={inputCls} placeholder="2015" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Signature offerings (up to 3)</label>
+          {[0, 1, 2].map((i) => {
+            const s = initial.signatureItems?.[i];
+            return (
+              <div key={i} className="grid gap-2 sm:grid-cols-3">
+                <input name={`sig${i}title`} defaultValue={s?.title} className={inputCls} placeholder={`Item ${i + 1} name`} />
+                <input name={`sig${i}img`} defaultValue={s?.imageUrl} className={inputCls} placeholder="Image URL" />
+                <input name={`sig${i}desc`} defaultValue={s?.description} className={inputCls} placeholder="Short description" />
+              </div>
+            );
+          })}
+        </div>
+      </fieldset>
+
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <button disabled={busy} className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
         {busy ? "Saving…" : businessId ? "Save changes" : "Submit for approval"}

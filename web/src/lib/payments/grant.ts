@@ -9,10 +9,14 @@ import { addRole } from "@/lib/auth";
 export async function grantClaimOwnership(claimId: string, amountPence: number): Promise<void> {
   const claim = await db.claimRequest.findUnique({
     where: { id: claimId },
-    include: { business: { select: { id: true, ownerId: true, verificationLevel: true } } },
+    include: { business: { select: { id: true, ownerId: true, verificationLevel: true, founderName: true, founderStory: true } } },
   });
   if (!claim) return;
   if (claim.business.ownerId && claim.business.ownerId !== claim.userId) return; // owned by someone else — refuse
+
+  // Seed the founder identity captured at claim time, if the profile has none yet.
+  const founderName = claim.business.founderName || claim.founderName;
+  const founderStory = claim.business.founderStory || claim.founderStory;
 
   await db.$transaction([
     db.claimRequest.update({
@@ -21,7 +25,13 @@ export async function grantClaimOwnership(claimId: string, amountPence: number):
     }),
     db.business.update({
       where: { id: claim.businessId },
-      data: { ownerId: claim.userId, claimedAt: claim.business.ownerId ? undefined : new Date(), verificationLevel: Math.max(claim.business.verificationLevel, 1) },
+      data: {
+        ownerId: claim.userId,
+        claimedAt: claim.business.ownerId ? undefined : new Date(),
+        verificationLevel: Math.max(claim.business.verificationLevel, 1),
+        founderName,
+        founderStory,
+      },
     }),
   ]);
   await addRole(claim.userId, "BUSINESS_OWNER");

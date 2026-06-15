@@ -14,6 +14,18 @@ export const businessInputSchema = z.object({
   facebook: z.string().max(200).optional().default(""),
   hoursPreset: z.enum(["none", "office", "shop", "restaurant"]).optional().default("none"),
   photoUrls: z.array(z.string().url()).max(8).optional().default([]),
+  // --- pride / identity fields (optional; owners enrich over time) ---
+  coverImageUrl: z.string().url().max(400).optional().or(z.literal("")).default(""),
+  founderName: z.string().max(120).optional().default(""),
+  founderPhotoUrl: z.string().url().max(400).optional().or(z.literal("")).default(""),
+  founderStory: z.string().max(2000).optional().default(""),
+  brandStory: z.string().max(2000).optional().default(""),
+  yearFounded: z.coerce.number().int().min(1800).max(2100).optional().nullable(),
+  signatureItems: z
+    .array(z.object({ title: z.string().max(120).default(""), description: z.string().max(400).default(""), imageUrl: z.string().max(400).default("") }))
+    .max(6)
+    .optional()
+    .default([]),
 });
 
 export const eventInputSchema = z.object({

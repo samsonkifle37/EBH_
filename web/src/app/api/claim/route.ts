@@ -8,6 +8,9 @@ const schema = z.object({
   claimantName: z.string().min(2).max(120),
   claimantEmail: z.string().email().max(160),
   claimantPhone: z.string().max(40).optional().default(""),
+  founderName: z.string().min(2).max(120),
+  // Founder story is mandatory — it's the heart of the profile.
+  founderStory: z.string().min(40).max(2000),
   evidenceUrl: z.string().max(300).optional().default(""),
   notes: z.string().max(1000).optional().default(""),
 });
@@ -19,7 +22,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Please provide your name, a valid email, and confirm the business" }, { status: 400 });
+    return NextResponse.json({ error: "Please add your name, a valid email, and a founder story (at least 40 characters)." }, { status: 400 });
   }
   const d = parsed.data;
 
@@ -43,6 +46,8 @@ export async function POST(req: Request) {
       claimantName: d.claimantName,
       claimantEmail: d.claimantEmail,
       claimantPhone: d.claimantPhone,
+      founderName: d.founderName,
+      founderStory: d.founderStory,
       evidenceUrl: d.evidenceUrl,
       notes: d.notes,
       status: "pending",

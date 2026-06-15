@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function ClaimForm({ businessId, defaultName }: { businessId: string; defaultName: string }) {
   const router = useRouter();
-  const [form, setForm] = useState({ claimantName: defaultName, claimantEmail: "", claimantPhone: "", evidenceUrl: "", notes: "" });
+  const [form, setForm] = useState({ claimantName: defaultName, claimantEmail: "", claimantPhone: "", founderName: defaultName, founderStory: "", evidenceUrl: "", notes: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
@@ -67,6 +67,22 @@ export default function ClaimForm({ businessId, defaultName }: { businessId: str
           <input value={form.claimantPhone} onChange={(e) => set("claimantPhone", e.target.value)} className={input} />
         </div>
       </div>
+      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+        <p className="text-sm font-semibold text-emerald-900">Your founder story</p>
+        <p className="mt-0.5 text-xs text-emerald-800">This is the heart of your profile — customers connect with the person behind the business.</p>
+        <div className="mt-3 space-y-3">
+          <div>
+            <label className="text-xs font-semibold text-neutral-500">Founder name *</label>
+            <input value={form.founderName} onChange={(e) => set("founderName", e.target.value)} className={input} placeholder="Who runs the business?" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-neutral-500">Why did you start this business? *</label>
+            <textarea value={form.founderStory} onChange={(e) => set("founderStory", e.target.value)} rows={4} className={input} placeholder="Tell your story in a few sentences — what inspired you, what you're proud of…" />
+            <p className="mt-1 text-xs text-neutral-400">{form.founderStory.trim().length}/40 characters minimum</p>
+          </div>
+        </div>
+      </div>
+
       <div>
         <label className="text-xs font-semibold text-neutral-500">Evidence URL</label>
         <input value={form.evidenceUrl} onChange={(e) => set("evidenceUrl", e.target.value)} className={input} placeholder="Link proving ownership — website, social page, listing…" />
@@ -78,7 +94,7 @@ export default function ClaimForm({ businessId, defaultName }: { businessId: str
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <button disabled={busy || !form.claimantName.trim() || !form.claimantEmail.trim()} className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
+      <button disabled={busy || !form.claimantName.trim() || !form.claimantEmail.trim() || !form.founderName.trim() || form.founderStory.trim().length < 40} className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
         {busy ? "Submitting…" : "Submit claim"}
       </button>
       <p className="text-xs text-neutral-400">Free to submit. No payment required while we verify ownership.</p>

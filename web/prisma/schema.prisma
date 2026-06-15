@@ -44,6 +44,16 @@ model Business {
   email             String    @default("")
   socials           String    @default("{}") // JSON {instagram, facebook, tiktok}
   openingHours      String    @default("{}") // JSON {mon:[{open,close}],...}
+
+  // --- pride / identity (Phase 1) ---
+  coverImageUrl   String  @default("")
+  founderName     String  @default("")
+  founderPhotoUrl String  @default("")
+  founderStory    String  @default("")
+  brandStory      String  @default("")
+  yearFounded     Int?
+  signatureItems  String  @default("[]") // JSON [{title, description, imageUrl}]
+
   verificationLevel Int       @default(0) // 0-4
   featured          Boolean   @default(false)
   plan              String    @default("FREE") // FREE | VERIFIED | FEATURED
@@ -269,6 +279,8 @@ model ClaimRequest {
   claimantName  String    @default("")
   claimantEmail String    @default("")
   claimantPhone String    @default("")
+  founderName   String    @default("")
+  founderStory  String    @default("")
   evidenceUrl   String    @default("")
   notes         String    @default("")
   status        String    @default("pending") // pending | approved | rejected | needs_more_evidence
