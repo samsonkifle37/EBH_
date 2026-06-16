@@ -24,6 +24,15 @@ export function isPrideEvent(v: unknown): v is PrideEventType {
   return typeof v === "string" && PRIDE_EVENT_SET.has(v);
 }
 
+// Trust/support surface events — not part of the Share Rate loop, but tracked
+// through the same privacy-respecting first-party pipeline.
+export const SUPPORT_EVENTS = ["ABOUT_VIEW", "HELP_ARTICLE_VIEW", "REPORT_SUBMITTED", "SAFETY_VIEW"] as const;
+export type SupportEventType = (typeof SUPPORT_EVENTS)[number];
+
+/** Every event the /api/analytics/track endpoint will accept. */
+export const TRACKABLE_EVENTS = [...PRIDE_EVENTS, ...SUPPORT_EVENTS] as const;
+export type TrackableEvent = (typeof TRACKABLE_EVENTS)[number];
+
 // Every event in the share family.
 export const SHARE_ACTIONS: readonly PrideEventType[] = [
   "SHARE_KIT_OPENED",

@@ -27,6 +27,7 @@ import NuCallout from "@/components/NuCallout";
 import BadgeRail from "@/components/BadgeRail";
 import BusinessIdentity from "@/components/BusinessIdentity";
 import { earnedBadges } from "@/lib/domain/badges";
+import { breadcrumbJsonLd } from "@/lib/seo";
 import { CATEGORY_LABELS, CITY_LABELS, isCategory, isCity, type Category, type City } from "@/lib/types";
 
 interface Props {
@@ -162,6 +163,20 @@ export default async function BusinessPage({ params }: Props) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              ...(isCategory(business.category) && isCity(business.city)
+                ? [{ name: `${categoryLabel} in ${cityLabel}`, path: `/${business.category}/${business.city}` }]
+                : []),
+              { name: business.name, path: `/business/${business.slug}` },
+            ]),
+          ),
+        }}
+      />
 
       <nav className="mb-4 text-sm text-neutral-400">
         <Link href="/" className="hover:text-emerald-700">Home</Link>
@@ -336,6 +351,12 @@ export default async function BusinessPage({ params }: Props) {
           <NuCallout title="Visiting Ethiopia?" body="Discover trusted hotels, tours and experiences — and plan the whole trip with NU." cta="Explore with NU" />
 
           <AdSlot placement="BUSINESS_DETAIL" />
+
+          <p className="text-center text-xs text-neutral-400">
+            <Link href={`/report?business=${business.slug}`} className="hover:text-emerald-700 hover:underline">
+              ⚑ Report this listing
+            </Link>
+          </p>
         </aside>
       </div>
     </main>

@@ -8,7 +8,7 @@ export const metadata = { title: "Admin" };
 export default async function AdminPage() {
   await requireAdminPage();
 
-  const [pendingBiz, pendingEvents, totalBiz, totalEvents, totalUsers, totalReviews, activeAds, pendingClaims] = await Promise.all([
+  const [pendingBiz, pendingEvents, totalBiz, totalEvents, totalUsers, totalReviews, activeAds, pendingClaims, openReports] = await Promise.all([
     db.business.count({ where: { status: "PENDING" } }),
     db.event.count({ where: { status: "PENDING" } }),
     db.business.count(),
@@ -17,6 +17,7 @@ export default async function AdminPage() {
     db.review.count(),
     db.ad.count({ where: { active: true } }),
     db.claimRequest.count({ where: { status: { in: ["pending", "needs_more_evidence"] } } }),
+    db.report.count({ where: { status: { in: ["open", "reviewing"] } } }),
   ]);
 
   const sections = [
@@ -24,6 +25,7 @@ export default async function AdminPage() {
     { href: "/admin/claims", title: "Claims", desc: "Review ownership claims; approve to transfer ownership", badge: pendingClaims },
     { href: "/admin/events", title: "Events", desc: "Approve and feature community events", badge: pendingEvents },
     { href: "/admin/reviews", title: "Reviews", desc: "Moderate abusive or fake reviews", badge: 0 },
+    { href: "/admin/reports", title: "Reports", desc: "User trust & safety reports — incorrect info, fraud, impersonation", badge: openReports },
     { href: "/admin/pride", title: "Pride & Sharing", desc: "North-Star Share Rate, channels and what drives owners to share", badge: 0 },
     { href: "/admin/revenue", title: "Revenue", desc: "MRR, ARR and revenue by stream (live once billing is on)", badge: 0 },
     { href: "/admin/payments", title: "Payments", desc: "All payments across subscriptions, claims, ads and promotions", badge: 0 },

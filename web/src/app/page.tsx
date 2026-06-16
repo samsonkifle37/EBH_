@@ -16,6 +16,7 @@ import {
   CITIES,
   CITY_LABELS,
 } from "@/lib/types";
+import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -42,17 +43,10 @@ export default async function HomePage() {
     getUpcomingEvents({ limit: 3 }),
   ]);
 
-  const orgJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Ethiopian Business Hub UK",
-    url: process.env.SITE_URL ?? "http://localhost:3000",
-    slogan: "Discover, Support, and Grow Ethiopian Businesses Across the UK",
-  };
-
   return (
     <main>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }} />
 
       {/* Hero — premium charcoal, EBH discovery first */}
       <section className="relative overflow-hidden bg-ink text-white">

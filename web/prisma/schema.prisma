@@ -90,6 +90,7 @@ model Business {
   sources         BusinessSource[]
   analyticsDaily  BusinessAnalyticsDaily[]
   prideEvents     PrideEvent[]
+  reports         Report[]
 
   @@index([category, city, status])
   @@index([sourceType, status])
@@ -235,6 +236,25 @@ model AnalyticsEvent {
 
   @@index([type, businessId, createdAt])
   @@index([type, eventId, createdAt])
+}
+
+// --- Trust & safety: user reports / moderation queue ---
+model Report {
+  id            String    @id @default(cuid())
+  businessId    String?
+  reason        String // incorrect_info | duplicate | fake_review | inappropriate | impersonation | fraud | safety | other
+  details       String    @default("")
+  reporterId    String? // null = anonymous
+  reporterEmail String    @default("")
+  status        String    @default("open") // open | reviewing | resolved | dismissed
+  createdAt     DateTime  @default(now())
+  reviewedAt    DateTime?
+  reviewedBy    String?
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([businessId])
 }
 
 // --- Pride measurement layer (North-Star: Share Rate) ---

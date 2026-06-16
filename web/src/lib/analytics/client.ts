@@ -1,4 +1,4 @@
-import type { PrideEventType } from "./events";
+import type { TrackableEvent } from "./events";
 
 export interface TrackOptions {
   businessId?: string;
@@ -13,7 +13,7 @@ export interface TrackOptions {
  * Visitor id + attribution are read server-side from cookies, so the client only
  * sends the action and a little context.
  */
-export function track(action: PrideEventType, opts: TrackOptions = {}): void {
+export function track(action: TrackableEvent, opts: TrackOptions = {}): void {
   if (typeof window === "undefined") return;
   const body = JSON.stringify({ action, ...opts });
   try {

@@ -28,6 +28,11 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_GB",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ethiopian Business Hub UK",
+    description: "Discover and support verified Ethiopian-owned businesses across the UK.",
+  },
 };
 
 export default function RootLayout({

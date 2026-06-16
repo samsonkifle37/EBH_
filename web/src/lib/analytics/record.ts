@@ -2,10 +2,10 @@ import { db } from "@/lib/db";
 import { trustV2ForBusiness } from "@/lib/trust";
 import { profileCompletion } from "@/lib/domain/profileCompletion";
 import { dayKey } from "@/lib/domain/analytics";
-import type { PrideEventType } from "./events";
+import type { TrackableEvent } from "./events";
 
 export interface RecordPrideInput {
-  action: PrideEventType;
+  action: TrackableEvent;
   businessId?: string | null;
   visitorId: string;
   channel?: string;

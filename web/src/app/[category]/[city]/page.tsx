@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { searchBusinesses } from "@/lib/queries/businesses";
 import BusinessCard from "@/components/BusinessCard";
 import EmptyState from "@/components/EmptyState";
+import { breadcrumbJsonLd } from "@/lib/seo";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -60,6 +61,18 @@ export default async function CategoryCityPage({ params }: Props) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: categoryLabel, path: `/businesses?category=${category}` },
+              { name: `${categoryLabel} in ${cityLabel}`, path: `/${category}/${city}` },
+            ]),
+          ),
+        }}
+      />
 
       <nav className="text-sm text-neutral-400">
         <Link href="/" className="hover:text-emerald-700">Home</Link>

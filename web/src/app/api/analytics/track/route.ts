@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 import { z } from "zod";
 import { recordPrideEvent } from "@/lib/analytics/record";
-import { PRIDE_EVENTS, isShareChannel } from "@/lib/analytics/events";
+import { TRACKABLE_EVENTS, isShareChannel } from "@/lib/analytics/events";
 import { VISITOR_COOKIE, ATTRIBUTION_COOKIE, parseAttribution } from "@/lib/analytics/attribution";
 
 export const runtime = "nodejs"; // Prisma
 
 const schema = z.object({
-  action: z.enum(PRIDE_EVENTS),
+  action: z.enum(TRACKABLE_EVENTS),
   businessId: z.string().min(1).optional(),
   channel: z.string().max(32).optional(),
   asset: z.string().max(32).optional(),

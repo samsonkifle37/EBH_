@@ -25,6 +25,11 @@ export default async function Header() {
     mobileLinks.push({ href: "/pricing", label: "List your business" });
     mobileLinks.push({ href: "/auth/signin", label: "Sign in" });
   }
+  // trust & support — discoverable from mobile navigation
+  mobileLinks.push({ href: "/about", label: "About" });
+  mobileLinks.push({ href: "/help", label: "Help centre" });
+  mobileLinks.push({ href: "/safety", label: "Safety" });
+  mobileLinks.push({ href: "/contact", label: "Contact" });
 
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-ivory/85 backdrop-blur supports-[backdrop-filter]:bg-ivory/70">

@@ -21,7 +21,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
         <div>
           <Logo showTagline />
           <p className="mt-4 text-sm text-neutral-500">
@@ -60,6 +60,16 @@ export default function Footer() {
             <li><Link href="/pricing" className="hover:text-emerald-700">Get verified</Link></li>
             <li><Link href="/advertise" className="hover:text-emerald-700">Advertise with us</Link></li>
             <li><Link href="/dashboard/events" className="hover:text-emerald-700">Promote an event</Link></li>
+          </ul>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-neutral-900">Support &amp; trust</p>
+          <ul className="mt-3 space-y-2 text-sm text-neutral-500">
+            <li><Link href="/about" className="hover:text-emerald-700">About EBH</Link></li>
+            <li><Link href="/help" className="hover:text-emerald-700">Help centre</Link></li>
+            <li><Link href="/safety" className="hover:text-emerald-700">Safety &amp; moderation</Link></li>
+            <li><Link href="/report" className="hover:text-emerald-700">Report a problem</Link></li>
+            <li><Link href="/contact" className="hover:text-emerald-700">Contact us</Link></li>
           </ul>
         </div>
       </div>

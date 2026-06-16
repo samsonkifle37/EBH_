@@ -13,6 +13,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/concierge",
     "/pricing",
     "/advertise",
+    "/about",
+    "/contact",
+    "/help",
+    "/safety",
+    "/report",
+    "/privacy",
+    "/terms",
   ].map((p) => ({ url: `${base}${p}`, changeFrequency: "daily", priority: p === "" ? 1 : 0.8 }));
 
   const landing: MetadataRoute.Sitemap = CATEGORIES.flatMap((category) =>

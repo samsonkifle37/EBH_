@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   PRIDE_EVENTS,
+  SUPPORT_EVENTS,
+  TRACKABLE_EVENTS,
   isPrideEvent,
   isShareAction,
   isDistributionShare,
@@ -17,6 +19,13 @@ describe("event taxonomy", () => {
 
   it("has exactly the 12 specified events", () => {
     expect(PRIDE_EVENTS).toHaveLength(12);
+  });
+
+  it("adds support events to the trackable set without touching the pride loop", () => {
+    expect(SUPPORT_EVENTS).toEqual(["ABOUT_VIEW", "HELP_ARTICLE_VIEW", "REPORT_SUBMITTED", "SAFETY_VIEW"]);
+    expect(TRACKABLE_EVENTS).toContain("REPORT_SUBMITTED");
+    expect(TRACKABLE_EVENTS).toContain("PROFILE_VIEW");
+    expect(TRACKABLE_EVENTS).toHaveLength(PRIDE_EVENTS.length + SUPPORT_EVENTS.length);
   });
 
   it("classifies share actions vs distribution shares", () => {
