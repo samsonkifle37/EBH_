@@ -2,64 +2,94 @@ import Link from "next/link";
 import { getSession, hasRole } from "@/lib/session";
 import { NU_URL } from "@/lib/nu";
 import SignOutButton from "@/components/SignOutButton";
+import SearchBar from "@/components/ui/SearchBar";
+import MobileMenu, { type MobileNavLink } from "@/components/MobileMenu";
+
+const NAV: MobileNavLink[] = [
+  { href: "/businesses", label: "Businesses" },
+  { href: "/events", label: "Events" },
+  { href: "/concierge", label: "AI Concierge" },
+  { href: "/pricing", label: "Pricing" },
+];
 
 export default async function Header() {
   const session = await getSession();
 
+  const mobileLinks: MobileNavLink[] = [...NAV];
+  if (session) {
+    if (hasRole(session, "ADMIN")) mobileLinks.push({ href: "/admin", label: "Admin" });
+    if (hasRole(session, "EVENT_ORGANIZER")) mobileLinks.push({ href: "/dashboard/events", label: "My Events" });
+    if (hasRole(session, "BUSINESS_OWNER")) mobileLinks.push({ href: "/owner", label: "My Businesses" });
+  } else {
+    mobileLinks.push({ href: "/pricing", label: "List your business" });
+    mobileLinks.push({ href: "/auth/signin", label: "Sign in" });
+  }
+
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-700 via-yellow-400 to-red-600 text-sm font-black text-white shadow-sm">
+    <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-ivory/85 backdrop-blur supports-[backdrop-filter]:bg-ivory/70">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:gap-5">
+        {/* Brand */}
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-700 via-gold-bright to-red-600 text-sm font-black text-white shadow-sm">
             EB
           </span>
-          <span className="hidden text-[15px] font-bold tracking-tight sm:block">
+          <span className="hidden text-[15px] font-bold tracking-tight text-ink sm:block">
             Ethiopian Business Hub <span className="text-emerald-700">UK</span>
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium text-neutral-600 md:flex">
-          <Link href="/businesses" className="hover:text-neutral-900">Businesses</Link>
-          <Link href="/events" className="hover:text-neutral-900">Events</Link>
-          <Link href="/concierge" className="hover:text-neutral-900">AI Concierge</Link>
-          <Link href="/pricing" className="hover:text-neutral-900">Pricing</Link>
+        {/* Center search (tablet+) */}
+        <div className="hidden flex-1 justify-center md:flex">
+          <SearchBar variant="compact" className="w-full max-w-md" />
+        </div>
+
+        {/* Desktop nav */}
+        <nav className="hidden items-center gap-5 text-sm font-medium text-neutral-600 lg:flex">
+          {NAV.map((l) => (
+            <Link key={l.href} href={l.href} className="hover:text-ink">{l.label}</Link>
+          ))}
         </nav>
 
-        <div className="flex items-center gap-2">
-          {/* Always-visible NU CTA — NU app is the primary conversion goal */}
+        {/* Right actions */}
+        <div className="ml-auto flex items-center gap-2 md:ml-0">
           <a
             href={NU_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-xl bg-neutral-900 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-neutral-800"
+            className="hidden rounded-xl bg-ink px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-ink-soft sm:inline-flex"
           >
             Download NU
           </a>
+
           {session ? (
-            <>
+            <div className="hidden items-center gap-1 md:flex">
               {hasRole(session, "ADMIN") && (
-                <Link href="/admin" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 sm:block">Admin</Link>
+                <Link href="/admin" className="rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100">Admin</Link>
               )}
               {hasRole(session, "EVENT_ORGANIZER") && (
-                <Link href="/dashboard/events" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 sm:block">My Events</Link>
+                <Link href="/dashboard/events" className="rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100">My Events</Link>
               )}
               {hasRole(session, "BUSINESS_OWNER") && (
-                <Link href="/owner" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 sm:block">My Businesses</Link>
+                <Link href="/owner" className="rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100">My Businesses</Link>
               )}
               <Link href="/account" className="rounded-lg px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100">
                 {session.name.split(" ")[0]}
               </Link>
               <SignOutButton />
-            </>
+            </div>
           ) : (
-            <>
-              <Link href="/auth/signin" className="rounded-lg px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100">
-                Sign In
-              </Link>
+            <div className="hidden items-center gap-2 md:flex">
+              <Link href="/auth/signin" className="rounded-lg px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100">Sign In</Link>
               <Link href="/pricing" className="rounded-xl bg-emerald-700 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800">
                 List Your Business
               </Link>
-            </>
+            </div>
+          )}
+
+          {session ? (
+            <MobileMenu links={mobileLinks} signedIn accountHref="/account" />
+          ) : (
+            <MobileMenu links={mobileLinks} signedIn={false} />
           )}
         </div>
       </div>

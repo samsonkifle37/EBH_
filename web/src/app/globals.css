@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafaf9;
+  /* Warm ivory canvas + charcoal ink — the EBH premium base */
+  --background: #faf7f0;
   --foreground: #1c1917;
 }
 
@@ -10,10 +11,40 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* EBH design tokens — charcoal / warm ivory / gold, alongside the brand emerald */
+  --color-ink: #1a1613;
+  --color-ink-soft: #44403c;
+  --color-ivory: #faf7f0;
+  --color-ivory-card: #fffdf8;
+  --color-gold: #b8860b;
+  --color-gold-bright: #e0a82e;
+  --color-gold-soft: #f6ecd2;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Accessible, on-brand focus ring for keyboard users across all surfaces */
+*:focus-visible {
+  outline: 2px solid var(--color-gold-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--color-gold-soft);
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
