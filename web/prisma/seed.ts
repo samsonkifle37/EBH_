@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import { slugify } from "../src/lib/domain/slug";
 import { photoUrl } from "../src/lib/placeholder";
 
@@ -181,7 +182,14 @@ async function main() {
   await db.business.deleteMany();
   await db.user.deleteMany();
 
-  const hash = await bcrypt.hash("demo1234", 10);
+  // No hard-coded credentials in source. Use SEED_PASSWORD if provided, else a
+  // random per-run password (printed once to the seeding operator only). Seed
+  // accounts are for local/dev fixtures and must never be relied on in prod.
+  const seedPassword = process.env.SEED_PASSWORD || `seed-${randomBytes(12).toString("hex")}`;
+  if (!process.env.SEED_PASSWORD) {
+    console.log(`[seed] generated dev password for fixture accounts: ${seedPassword}`);
+  }
+  const hash = await bcrypt.hash(seedPassword, 10);
 
   console.log("Creating users...");
   const admin = await db.user.create({ data: { email: "admin@ebh.uk", passwordHash: hash, name: "EBH Admin", roles: "USER,ADMIN" } });

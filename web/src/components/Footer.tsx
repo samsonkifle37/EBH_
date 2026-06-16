@@ -64,6 +64,10 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-neutral-100 py-4 text-center text-xs text-neutral-400">
+        <div className="mb-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link href="/privacy" className="hover:text-emerald-700">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-emerald-700">Terms of Service</Link>
+        </div>
         © {new Date().getFullYear()} Ethiopian Business Hub UK · Discover, Support, and Grow Ethiopian Businesses Across the UK
       </div>
     </footer>

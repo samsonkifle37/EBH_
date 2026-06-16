@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { toSummary } from "@/lib/queries/businesses";
 import BusinessCard from "@/components/BusinessCard";
 import RatingStars from "@/components/RatingStars";
+import DeleteAccount from "@/components/DeleteAccount";
 
 export const metadata = { title: "My Account" };
 
@@ -92,6 +93,13 @@ export default async function AccountPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-12 border-t border-neutral-200 pt-8">
+        <h2 className="text-lg font-bold">Settings</h2>
+        <div className="mt-4">
+          {user?.email && <DeleteAccount email={user.email} />}
+        </div>
       </section>
     </main>
   );

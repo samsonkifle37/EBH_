@@ -76,10 +76,13 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
         )}
       </p>
 
-      <div className="mt-6 rounded-xl bg-neutral-50 p-4 text-xs text-neutral-500">
-        <p className="font-semibold text-neutral-600">Demo accounts (password: demo1234)</p>
-        <p className="mt-1">user@ebh.uk · owner@ebh.uk · organizer@ebh.uk · admin@ebh.uk</p>
-      </div>
+      {mode === "signup" && (
+        <p className="mt-4 text-xs text-neutral-400">
+          By creating an account you agree to our{" "}
+          <Link href="/terms" className="underline hover:text-emerald-700">Terms</Link> and{" "}
+          <Link href="/privacy" className="underline hover:text-emerald-700">Privacy Policy</Link>.
+        </p>
+      )}
     </div>
   );
 }
