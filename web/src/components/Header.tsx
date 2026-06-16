@@ -4,6 +4,7 @@ import { NU_URL } from "@/lib/nu";
 import SignOutButton from "@/components/SignOutButton";
 import SearchBar from "@/components/ui/SearchBar";
 import MobileMenu, { type MobileNavLink } from "@/components/MobileMenu";
+import Logo from "@/components/Logo";
 
 const NAV: MobileNavLink[] = [
   { href: "/businesses", label: "Businesses" },
@@ -29,13 +30,8 @@ export default async function Header() {
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-ivory/85 backdrop-blur supports-[backdrop-filter]:bg-ivory/70">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:gap-5">
         {/* Brand */}
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-700 via-gold-bright to-red-600 text-sm font-black text-white shadow-sm">
-            EB
-          </span>
-          <span className="hidden text-[15px] font-bold tracking-tight text-ink sm:block">
-            Ethiopian Business Hub <span className="text-emerald-700">UK</span>
-          </span>
+        <Link href="/" className="shrink-0" aria-label="Ethiopian Business Hub UK — home">
+          <Logo />
         </Link>
 
         {/* Center search (tablet+) */}

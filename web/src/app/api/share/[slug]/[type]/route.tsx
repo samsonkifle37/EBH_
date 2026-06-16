@@ -6,6 +6,7 @@ import { CITY_LABELS, isCity, type City } from "@/lib/types";
 import { siteUrl } from "@/lib/payments/stripe";
 import { recordPrideEvent } from "@/lib/analytics/record";
 import { shareParams } from "@/lib/analytics/attribution";
+import { markDataUri } from "@/lib/brand";
 
 export const runtime = "nodejs"; // Prisma + qrcode need Node
 
@@ -55,8 +56,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ display: "flex", height: 56, width: 56, alignItems: "center", justifyContent: "center", borderRadius: 14, background: "linear-gradient(135deg,#047857,#FCDD09,#DA1212)", fontSize: 28, fontWeight: 900 }}>EB</div>
-          <div style={{ fontSize: 26, fontWeight: 700, color: "#d6d3d1" }}>Ethiopian Business Hub UK</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={markDataUri()} width={64} height={64} alt="" />
+          <div style={{ display: "flex", fontSize: 26, fontWeight: 700, color: "#d6d3d1" }}>Ethiopian Business Hub UK</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { NU_URL, NU_APP_STORE_URL } from "@/lib/nu";
 import { CATEGORIES, CATEGORY_LABELS, CITIES, CITY_LABELS } from "@/lib/types";
+import Logo from "@/components/Logo";
 
 export default function Footer() {
   return (
@@ -22,10 +23,10 @@ export default function Footer() {
 
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="text-sm font-bold">Ethiopian Business Hub UK</p>
-          <p className="mt-2 text-sm text-neutral-500">
-            Discover • Connect • Support. The home of Ethiopian businesses,
-            events and community across the United Kingdom.
+          <Logo showTagline />
+          <p className="mt-4 text-sm text-neutral-500">
+            The verified home of Ethiopian businesses, events and community
+            across the United Kingdom.
           </p>
         </div>
         <div>
