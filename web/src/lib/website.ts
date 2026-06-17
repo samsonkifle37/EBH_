@@ -75,6 +75,15 @@ export function whatsappLink(raw: string, message?: string): string | null {
   return `https://wa.me/${digits}${q}`;
 }
 
+/**
+ * Resolve Website Mode from the URL param and/or a persisted flag. Single source
+ * of truth so the page, metadata and analytics agree. Future-compatible: pass
+ * `business.websiteMode` once that column exists — no route duplication needed.
+ */
+export function isWebsiteMode(modeParam?: string | null, persisted?: boolean): boolean {
+  return modeParam === "website" || persisted === true;
+}
+
 /** True only when the business has a real, non-EBH external website. */
 export function hasExternalWebsite(website: string): boolean {
   const w = (website ?? "").trim().toLowerCase();

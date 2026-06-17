@@ -32,7 +32,7 @@ export default async function Header() {
   mobileLinks.push({ href: "/contact", label: "Contact" });
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-ivory/85 backdrop-blur supports-[backdrop-filter]:bg-ivory/70">
+    <header data-ebh-chrome className="sticky top-0 z-40 border-b border-neutral-200/80 bg-ivory/85 backdrop-blur supports-[backdrop-filter]:bg-ivory/70">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:gap-5">
         {/* Brand */}
         <Link href="/" className="shrink-0" aria-label="Ethiopian Business Hub UK — home">

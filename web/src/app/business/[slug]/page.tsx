@@ -28,7 +28,7 @@ import BadgeRail from "@/components/BadgeRail";
 import BusinessIdentity from "@/components/BusinessIdentity";
 import { earnedBadges } from "@/lib/domain/badges";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/seo";
-import { parseServices, parseFaqs, whatsappLink, trustBreakdownRows } from "@/lib/website";
+import { parseServices, parseFaqs, whatsappLink, trustBreakdownRows, isWebsiteMode } from "@/lib/website";
 import { profileCompletion } from "@/lib/domain/profileCompletion";
 import BusinessLogo from "@/components/BusinessLogo";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -38,6 +38,7 @@ import { CATEGORY_LABELS, CITY_LABELS, isCategory, isCity, type Category, type C
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ mode?: string }>;
 }
 
 /** True if either date is within the last `days` (module-scope keeps render pure). */
@@ -72,24 +73,33 @@ async function getBusiness(slug: string) {
   });
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const { mode } = await searchParams;
   const business = await getBusiness(slug);
   if (!business || business.status !== "APPROVED") return {};
   const cityLabel = isCity(business.city) ? CITY_LABELS[business.city as City] : business.city;
   return {
     title: `${business.name} — ${cityLabel}`,
     description: business.description.slice(0, 160),
+    // Canonical always points at the clean profile URL; the ?mode=website
+    // variant is noindex so it never competes as duplicate content.
     alternates: { canonical: `/business/${business.slug}` },
+    ...(isWebsiteMode(mode) ? { robots: { index: false, follow: true } } : {}),
     openGraph: { images: business.photos[0] ? [business.photos[0].url] : [] },
   };
 }
 
-export default async function BusinessPage({ params }: Props) {
+export default async function BusinessPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { mode } = await searchParams;
   const [business, session] = await Promise.all([getBusiness(slug), getSession()]);
   if (!business || business.status !== "APPROVED") notFound();
   if (business.sourceType === "demo" && !allowDemoData()) notFound();
+
+  // Website Mode = chrome-free, standalone-website presentation of this profile.
+  // Future-compatible with a persisted business.websiteMode flag (pass it here).
+  const websiteMode = isWebsiteMode(mode);
 
   // record listing view (fire and forget) — legacy analytics dashboard feed
   void db.analyticsEvent.create({ data: { type: "LISTING_VIEW", businessId: business.id } }).catch(() => {});
@@ -103,6 +113,9 @@ export default async function BusinessPage({ params }: Props) {
     void recordPrideEvent({ action: "PROFILE_VIEW", businessId: business.id, visitorId, channel });
     if (attribution?.channel === "qr") {
       void recordPrideEvent({ action: "SHARE_QR_SCAN", businessId: business.id, visitorId, channel: "qr" });
+    }
+    if (websiteMode) {
+      void recordPrideEvent({ action: "WEBSITE_MODE_VIEW", businessId: business.id, visitorId, channel });
     }
   }
 
@@ -213,6 +226,11 @@ export default async function BusinessPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
+      {/* Website Mode: hide global EBH chrome (header/footer) so the profile
+          reads as the business's own standalone website. */}
+      {websiteMode && (
+        <style dangerouslySetInnerHTML={{ __html: "[data-ebh-chrome]{display:none!important}" }} />
+      )}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script
         type="application/ld+json"
@@ -235,19 +253,21 @@ export default async function BusinessPage({ params }: Props) {
         />
       )}
 
-      <nav className="mb-4 text-sm text-neutral-400">
-        <Link href="/" className="hover:text-emerald-700">Home</Link>
-        {" / "}
-        {isCategory(business.category) && isCity(business.city) ? (
-          <Link href={`/${business.category}/${business.city}`} className="hover:text-emerald-700">
-            {categoryLabel} in {cityLabel}
-          </Link>
-        ) : (
-          <span>{categoryLabel}</span>
-        )}
-        {" / "}
-        <span className="text-neutral-600">{business.name}</span>
-      </nav>
+      {!websiteMode && (
+        <nav className="mb-4 text-sm text-neutral-400">
+          <Link href="/" className="hover:text-emerald-700">Home</Link>
+          {" / "}
+          {isCategory(business.category) && isCity(business.city) ? (
+            <Link href={`/${business.category}/${business.city}`} className="hover:text-emerald-700">
+              {categoryLabel} in {cityLabel}
+            </Link>
+          ) : (
+            <span>{categoryLabel}</span>
+          )}
+          {" / "}
+          <span className="text-neutral-600">{business.name}</span>
+        </nav>
+      )}
 
       {business.coverImageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -338,7 +358,7 @@ export default async function BusinessPage({ params }: Props) {
             <TrustBreakdown businessId={business.id} score={score} rows={trustRows} />
           </div>
 
-          {!business.ownerId && (
+          {!websiteMode && !business.ownerId && (
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
               <p className="text-sm text-amber-800">
                 <span className="font-semibold">Is this your business?</span> Claim your free EBH business website — add your logo, WhatsApp, services and get verified.
@@ -454,9 +474,12 @@ export default async function BusinessPage({ params }: Props) {
             <MapEmbed lat={business.lat} lng={business.lng} name={business.name} />
           )}
 
-          <NuCallout title="Visiting Ethiopia?" body="Discover trusted hotels, tours and experiences — and plan the whole trip with NU." cta="Explore with NU" />
-
-          <AdSlot placement="BUSINESS_DETAIL" />
+          {!websiteMode && (
+            <>
+              <NuCallout title="Visiting Ethiopia?" body="Discover trusted hotels, tours and experiences — and plan the whole trip with NU." cta="Explore with NU" />
+              <AdSlot placement="BUSINESS_DETAIL" />
+            </>
+          )}
 
           <p className="text-center text-xs text-neutral-400">
             <Link href={`/report?business=${business.slug}`} className="hover:text-emerald-700 hover:underline">
@@ -465,6 +488,12 @@ export default async function BusinessPage({ params }: Props) {
           </p>
         </aside>
       </div>
+
+      {websiteMode && (
+        <div className="mt-12 border-t border-neutral-200 pt-6 text-center text-xs text-neutral-400">
+          <Link href="/" className="font-medium hover:text-emerald-700">Powered by Ethiopian Business Hub UK</Link>
+        </div>
+      )}
     </main>
   );
 }

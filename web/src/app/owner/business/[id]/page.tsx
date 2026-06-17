@@ -4,9 +4,12 @@ import { db } from "@/lib/db";
 import { trustV2ForBusiness } from "@/lib/trust";
 import { earnedBadges } from "@/lib/domain/badges";
 import { profileCompletion } from "@/lib/domain/profileCompletion";
-import { parseServices, parseFaqs } from "@/lib/website";
+import { parseServices, parseFaqs, primaryWebsiteScore, hasExternalWebsite } from "@/lib/website";
+import { getWebsitePerformance } from "@/lib/analytics/prideMetrics";
 import { SHARE_DISTRIBUTION_ACTIONS, type PrideEventType } from "@/lib/analytics/events";
+import { siteUrl } from "@/lib/payments/stripe";
 import BadgeRail from "@/components/BadgeRail";
+import OwnerWebsitePanel from "@/components/OwnerWebsitePanel";
 
 export const metadata = { title: "Manage business" };
 
@@ -60,6 +63,19 @@ export default async function OwnerBusiness({ params }: { params: Promise<{ id: 
   ];
   const remaining = checklist.filter((c) => !c.done);
 
+  // Website Mode controls + PrimaryWebsiteScore
+  const perf = await getWebsitePerformance(id);
+  const websiteScore = primaryWebsiteScore({
+    claimed: !!business.ownerId,
+    shares: perf.shares,
+    directVisits: perf.directVisits,
+    returnVisitors: perf.returnVisitors,
+    hasExternalWebsite: hasExternalWebsite(business.website),
+  });
+  const base = siteUrl();
+  const websiteUrl = `${base}/business/${business.slug}?mode=website`;
+  const posterUrl = `${base}/api/share/${business.slug}/poster`;
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <nav className="text-sm text-neutral-400">
@@ -93,6 +109,8 @@ export default async function OwnerBusiness({ params }: { params: Promise<{ id: 
           </Link>
         )}
       </div>
+
+      <OwnerWebsitePanel websiteUrl={websiteUrl} posterUrl={posterUrl} score={websiteScore.score} qualifies={websiteScore.qualifies} />
 
       {/* Profile completion — celebration, not a chore */}
       <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">

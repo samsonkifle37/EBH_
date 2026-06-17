@@ -37,6 +37,7 @@ export const WEBSITE_EVENTS = [
   "PROFILE_UPDATED",
   "TRUST_BREAKDOWN_VIEW",
   "WEBSITE_SCORE_VIEW",
+  "WEBSITE_MODE_VIEW",
 ] as const;
 export type WebsiteEventType = (typeof WEBSITE_EVENTS)[number];
 

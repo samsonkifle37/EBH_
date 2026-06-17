@@ -5,7 +5,7 @@ import Logo from "@/components/Logo";
 
 export default function Footer() {
   return (
-    <footer className="mt-16 border-t border-neutral-200 bg-white">
+    <footer data-ebh-chrome className="mt-16 border-t border-neutral-200 bg-white">
       {/* NU conversion band — primary goal */}
       <div className="bg-neutral-900 text-white">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-4 py-8 sm:flex-row sm:items-center">

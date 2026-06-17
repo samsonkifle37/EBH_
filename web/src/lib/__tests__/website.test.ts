@@ -8,7 +8,21 @@ import {
   hasExternalWebsite,
   primaryWebsiteScore,
   trustBreakdownRows,
+  isWebsiteMode,
 } from "../website";
+
+describe("isWebsiteMode", () => {
+  it("activates from the URL param", () => {
+    expect(isWebsiteMode("website")).toBe(true);
+    expect(isWebsiteMode("standard")).toBe(false);
+    expect(isWebsiteMode(undefined)).toBe(false);
+    expect(isWebsiteMode(null)).toBe(false);
+  });
+  it("is future-compatible with a persisted flag", () => {
+    expect(isWebsiteMode(undefined, true)).toBe(true);
+    expect(isWebsiteMode(undefined, false)).toBe(false);
+  });
+});
 
 describe("parseServices", () => {
   it("filters unnamed and sorts by sortOrder", () => {

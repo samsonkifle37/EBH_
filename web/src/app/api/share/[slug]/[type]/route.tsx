@@ -34,7 +34,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const cityLabel = isCity(business.city) ? CITY_LABELS[business.city as City] : business.city;
   const topBadge = earnedBadges(business)[0]?.label ?? "On Ethiopian Business Hub";
   // QR carries share attribution so scans land as channel=qr and convert to views.
-  const profileUrl = `${siteUrl()}/business/${slug}?${shareParams(slug, "qr")}`;
+  // The printable poster's QR opens the clean Website-Mode view (shop window → website).
+  const profileUrl = `${siteUrl()}/business/${slug}?${shareParams(slug, "qr")}${type === "poster" ? "&mode=website" : ""}`;
   const qr = await QRCode.toDataURL(profileUrl, { margin: 1, width: 320, color: { dark: "#0a0a0a", light: "#ffffff" } });
 
   const vertical = type !== "card";
