@@ -3,12 +3,15 @@ import { requireOwner, getOwnedBusiness } from "@/lib/ownerGuard";
 import { db } from "@/lib/db";
 import { rollupDaily } from "@/lib/analytics/rollup";
 import { getBusinessAnalytics } from "@/lib/analytics/summary";
-import { getBusinessShareMetrics, getPlatformPride, getCategoryShareRate } from "@/lib/analytics/prideMetrics";
+import { getBusinessShareMetrics, getPlatformPride, getCategoryShareRate, getWebsitePerformance } from "@/lib/analytics/prideMetrics";
 import { ownerInsights } from "@/lib/analytics/shareMetrics";
+import { primaryWebsiteScore, hasExternalWebsite } from "@/lib/website";
+import { trackServerView } from "@/lib/analytics/serverTrack";
 import { profileCompletion } from "@/lib/domain/profileCompletion";
 import AnalyticsCards from "@/components/AnalyticsCards";
 import TrendChart from "@/components/TrendChart";
 import PrideAnalytics from "@/components/PrideAnalytics";
+import WebsitePerformancePanel from "@/components/WebsitePerformancePanel";
 
 function signatureCount(json: string): number {
   try {
@@ -67,6 +70,17 @@ export default async function OwnerAnalytics({
     categoryShareRate: categoryRate,
   });
 
+  // --- Website Performance + PrimaryWebsiteScore ---
+  void trackServerView("WEBSITE_SCORE_VIEW");
+  const perf = await getWebsitePerformance(id);
+  const websiteScore = primaryWebsiteScore({
+    claimed: !!business.ownerId,
+    shares: perf.shares,
+    directVisits: perf.directVisits,
+    returnVisitors: perf.returnVisitors,
+    hasExternalWebsite: hasExternalWebsite(business.website),
+  });
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
       <nav className="text-sm text-neutral-400">
@@ -89,6 +103,8 @@ export default async function OwnerAnalytics({
           ))}
         </div>
       </div>
+
+      <WebsitePerformancePanel perf={perf} score={websiteScore} />
 
       <PrideAnalytics
         businessId={id}

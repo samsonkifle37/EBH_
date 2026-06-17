@@ -27,11 +27,34 @@ import NuCallout from "@/components/NuCallout";
 import BadgeRail from "@/components/BadgeRail";
 import BusinessIdentity from "@/components/BusinessIdentity";
 import { earnedBadges } from "@/lib/domain/badges";
-import { breadcrumbJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, faqJsonLd } from "@/lib/seo";
+import { parseServices, parseFaqs, whatsappLink, trustBreakdownRows } from "@/lib/website";
+import { profileCompletion } from "@/lib/domain/profileCompletion";
+import BusinessLogo from "@/components/BusinessLogo";
+import WhatsAppButton from "@/components/WhatsAppButton";
+import BusinessFaq from "@/components/BusinessFaq";
+import TrustBreakdown from "@/components/TrustBreakdown";
 import { CATEGORY_LABELS, CITY_LABELS, isCategory, isCity, type Category, type City } from "@/lib/types";
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+/** True if either date is within the last `days` (module-scope keeps render pure). */
+function recentlyActive(a: Date | null, b: Date, days = 30, now: number = Date.now()): boolean {
+  const cutoff = now - days * 86_400_000;
+  return (a?.getTime() ?? 0) >= cutoff || b.getTime() >= cutoff;
+}
+
+/** Short "updated N days ago" string for the freshness signal. */
+function ago(d: Date, now: number = Date.now()): string {
+  const days = Math.floor((now - d.getTime()) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} week${days < 14 ? "" : "s"} ago`;
+  if (days < 365) return `${Math.floor(days / 30)} month${days < 60 ? "" : "s"} ago`;
+  return `${Math.floor(days / 365)} year${days < 730 ? "" : "s"} ago`;
 }
 
 async function getBusiness(slug: string) {
@@ -121,6 +144,34 @@ export default async function BusinessPage({ params }: Props) {
   const categoryLabel = isCategory(business.category) ? CATEGORY_LABELS[business.category as Category] : business.category;
   const cityLabel = isCity(business.city) ? CITY_LABELS[business.city as City] : business.city;
 
+  // --- website essentials ---
+  const services = parseServices(business.services);
+  const faqs = parseFaqs(business.faqs);
+  const waLink = business.whatsapp ? whatsappLink(business.whatsapp, `Hi ${business.name}, I found you on Ethiopian Business Hub`) : null;
+  const companiesHouse = business.companyNumber.length > 0 || sourceTypeList.includes("companies_house");
+  const googleVerified = business.mapsUrl.length > 0 || sourceTypeList.includes("google_places");
+  const recentActivity = recentlyActive(business.lastSourceCheckedAt, business.updatedAt);
+  const completion = profileCompletion({
+    coverImageUrl: business.coverImageUrl,
+    founderPhotoUrl: business.founderPhotoUrl,
+    founderStory: business.founderStory,
+    brandStory: business.brandStory,
+    signatureCount: signatureItems.filter((s) => s.title || s.imageUrl).length,
+    phone: business.phone,
+    website: business.website,
+    hoursJson: business.openingHours,
+    photoCount: business.photos.length,
+  }).score;
+  const trustRows = trustBreakdownRows({
+    ownerClaimed: !!business.ownerId,
+    companiesHouse,
+    google: googleVerified,
+    photos: business.photos.length,
+    reviews: count,
+    recentActivity,
+    completion,
+  });
+
   let socials: Record<string, string> = {};
   try {
     socials = JSON.parse(business.socials);
@@ -177,6 +228,12 @@ export default async function BusinessPage({ params }: Props) {
           ),
         }}
       />
+      {faqs.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(faqs.map((f) => ({ q: f.question, a: f.answer })))) }}
+        />
+      )}
 
       <nav className="mb-4 text-sm text-neutral-400">
         <Link href="/" className="hover:text-emerald-700">Home</Link>
@@ -201,42 +258,59 @@ export default async function BusinessPage({ params }: Props) {
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
         <div>
-          {badges.length > 0 && <div className="mb-3"><BadgeRail badges={badges} /></div>}
-          <div className="flex flex-wrap items-center gap-2">
-            {business.featured && <FeaturedBadge />}
-            <VerifiedBadge score={score} level={business.verificationLevel} />
-            <OpenNowBadge open={openNow} />
-          </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">{business.name}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-neutral-500">
-            {count > 0 ? (
-              <RatingStars rating={avg} count={count} size="lg" />
-            ) : business.googleRating == null ? (
-              <span className="font-medium text-neutral-400">No rating yet</span>
-            ) : null}
-            {business.googleRating != null && (
-              <a
-                href={business.mapsUrl || undefined}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-neutral-600 hover:text-emerald-700"
-              >
-                ⭐ {business.googleRating.toFixed(1)} on Google ({business.googleReviewCount ?? 0})
-              </a>
-            )}
-            <span>·</span>
-            <span>{categoryLabel}</span>
-            <span>·</span>
-            <span>📍 {business.address}, {cityLabel} {business.postcode}</span>
+          <div className="flex items-start gap-4">
+            <BusinessLogo name={business.name} logoUrl={business.logoUrl} className="h-16 w-16 shrink-0 text-2xl sm:h-20 sm:w-20" />
+            <div className="min-w-0">
+              {badges.length > 0 && <div className="mb-2"><BadgeRail badges={badges} /></div>}
+              <div className="flex flex-wrap items-center gap-2">
+                {business.featured && <FeaturedBadge />}
+                <VerifiedBadge score={score} level={business.verificationLevel} />
+                <OpenNowBadge open={openNow} />
+              </div>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight">{business.name}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-neutral-500">
+                {count > 0 ? (
+                  <RatingStars rating={avg} count={count} size="lg" />
+                ) : business.googleRating == null ? (
+                  <span className="font-medium text-neutral-400">No rating yet</span>
+                ) : null}
+                {business.googleRating != null && (
+                  <a
+                    href={business.mapsUrl || undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-neutral-600 hover:text-emerald-700"
+                  >
+                    ⭐ {business.googleRating.toFixed(1)} on Google ({business.googleReviewCount ?? 0})
+                  </a>
+                )}
+                <span>·</span>
+                <span>{categoryLabel}</span>
+                <span>·</span>
+                <span>📍 {business.address}, {cityLabel} {business.postcode}</span>
+              </div>
+            </div>
           </div>
 
-          <p className="mt-2 text-xs font-medium text-neutral-400">
-            Trust Score: {score}/100 · Based on verified public data
+          {/* Freshness signals */}
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-neutral-400">
+            <span>🕓 Updated {ago(business.updatedAt)}</span>
+            {!!business.ownerId && <span>· <span className="text-emerald-700">✓ Owner verified</span></span>}
+            {companiesHouse && <span>· <span className="text-emerald-700">✓ Companies House matched</span></span>}
+            {googleVerified && <span>· <span className="text-emerald-700">✓ On Google</span></span>}
           </p>
 
           <p className="mt-5 max-w-2xl leading-relaxed text-neutral-700">{business.description}</p>
 
           <div className="mt-6 flex flex-wrap gap-2">
+            {waLink && (
+              <WhatsAppButton businessId={business.id} href={waLink} className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:brightness-95" />
+            )}
+            {business.phone && (
+              <TrackedLink href={`tel:${business.phone.replace(/\s/g, "")}`} type="PHONE_CLICK" businessId={business.id} className="inline-flex items-center gap-2 rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 hover:border-emerald-600 hover:text-emerald-700">
+                📞 Call
+              </TrackedLink>
+            )}
             <FavoriteButton businessId={business.id} kind="favorite" initial={!!favorite} signedIn={!!session} />
             <FavoriteButton businessId={business.id} kind="follow" initial={!!follow} signedIn={!!session} />
             {!myReview && (
@@ -260,13 +334,17 @@ export default async function BusinessPage({ params }: Props) {
             )}
           </div>
 
+          <div className="mt-6">
+            <TrustBreakdown businessId={business.id} score={score} rows={trustRows} />
+          </div>
+
           {!business.ownerId && (
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
               <p className="text-sm text-amber-800">
-                <span className="font-semibold">Own this business?</span> Claim this listing from £2.99/month — respond to reviews, update details and get verified.
+                <span className="font-semibold">Is this your business?</span> Claim your free EBH business website — add your logo, WhatsApp, services and get verified.
               </p>
               <Link href={`/claim/${business.slug}`} className="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
-                Claim this listing
+                Claim your website
               </Link>
             </div>
           )}
@@ -287,6 +365,31 @@ export default async function BusinessPage({ params }: Props) {
               trustScore: score,
             }}
           />
+
+          {services.length > 0 && (
+            <section className="mt-10">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-400">Services</h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {services.map((s, i) => (
+                  <div key={i} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+                    {s.imageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={s.imageUrl} alt={s.name} className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-neutral-900">{s.name}</p>
+                        {s.priceRange && <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">{s.priceRange}</span>}
+                      </div>
+                      {s.description && <p className="mt-1 text-sm text-neutral-500">{s.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <BusinessFaq faqs={faqs} />
 
           <section className="mt-10">
             <h2 className="text-xl font-bold tracking-tight">Reviews</h2>
@@ -316,6 +419,9 @@ export default async function BusinessPage({ params }: Props) {
           <div className="rounded-2xl border border-neutral-200 bg-white p-5">
             <h2 className="text-sm font-semibold text-neutral-900">Contact</h2>
             <div className="mt-3 space-y-2.5 text-sm">
+              {waLink && (
+                <WhatsAppButton businessId={business.id} href={waLink} label={`WhatsApp ${business.whatsapp}`} className="flex items-center gap-2 font-medium text-[#1da851] hover:underline" />
+              )}
               {business.phone && (
                 <TrackedLink href={`tel:${business.phone.replace(/\s/g, "")}`} type="PHONE_CLICK" businessId={business.id} className="flex items-center gap-2 font-medium text-emerald-700 hover:underline">
                   📞 {business.phone}

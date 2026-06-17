@@ -13,6 +13,7 @@ export interface BusinessSummary {
   city: string;
   address: string;
   photoUrl: string | null;
+  logoUrl: string | null;
   avg: number;
   count: number;
   verificationLevel: number;
@@ -41,6 +42,7 @@ export function toSummary(b: BusinessWithRels, now: Date = new Date()): Business
     city: b.city,
     address: b.address,
     photoUrl: b.photos[0]?.url ?? null,
+    logoUrl: b.logoUrl || null,
     avg,
     count,
     verificationLevel: b.verificationLevel,

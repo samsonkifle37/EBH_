@@ -119,6 +119,68 @@ export async function getBusinessShareMetrics(businessId: string): Promise<Busin
   };
 }
 
+// ---- Website performance (owner dashboard) --------------------------------
+
+export interface WebsitePerformance {
+  totalViews: number;
+  directVisits: number;
+  uniqueVisitors: number;
+  returnVisitors: number;
+  igReferrals: number;
+  qrDownloads: number;
+  contacts: number;
+  shares: number;
+  percentile: number | null; // vs other claimed businesses by 30d views
+}
+
+const CONTACT = new Set<string>(["CONTACT_CLICK", "WEBSITE_CLICK", "DIRECTIONS_CLICK"]);
+
+export async function getWebsitePerformance(businessId: string, days = 30): Promise<WebsitePerformance> {
+  const since = new Date(Date.now() - days * 86_400_000);
+  const events = await db.prideEvent.findMany({
+    where: { businessId, createdAt: { gte: since } },
+    select: { action: true, channel: true, visitorId: true, referrer: true, asset: true },
+  });
+
+  const viewsByVisitor = new Map<string, number>();
+  let totalViews = 0;
+  let directVisits = 0;
+  let igReferrals = 0;
+  let qrDownloads = 0;
+  let contacts = 0;
+  let shares = 0;
+
+  for (const e of events) {
+    if (e.action === "PROFILE_VIEW") {
+      totalViews++;
+      const v = e.visitorId || "anon";
+      viewsByVisitor.set(v, (viewsByVisitor.get(v) ?? 0) + 1);
+      if (!e.channel || e.channel === "direct") directVisits++;
+      if ((e.referrer || "").toLowerCase().includes("instagram") || e.channel === "instagram") igReferrals++;
+    }
+    if (e.action === "SHARE_DOWNLOAD" && e.asset === "poster") qrDownloads++;
+    if (CONTACT.has(e.action)) contacts++;
+    if (DIST.includes(e.action)) shares++;
+  }
+
+  const uniqueVisitors = viewsByVisitor.size;
+  const returnVisitors = [...viewsByVisitor.values()].filter((n) => n > 1).length;
+
+  let percentile: number | null = null;
+  const grp = await db.prideEvent.groupBy({
+    by: ["businessId"],
+    where: { action: "PROFILE_VIEW", createdAt: { gte: since }, business: { is: { ownerId: { not: null } } } },
+    _count: { _all: true },
+  });
+  if (grp.length >= 5) {
+    const counts = grp.map((g) => g._count._all);
+    const below = counts.filter((c) => c < totalViews).length;
+    percentile = Math.round((below / counts.length) * 100);
+  }
+
+  return { totalViews, directVisits, uniqueVisitors, returnVisitors, igReferrals, qrDownloads, contacts, shares, percentile };
+}
+
 // ---- Admin (platform-wide) ------------------------------------------------
 
 export interface AdminPride {

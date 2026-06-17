@@ -22,7 +22,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
   const business = await db.business.findUnique({
     where: { slug },
-    select: { id: true, name: true, city: true, status: true, ownerId: true, claimedAt: true, verificationLevel: true, plan: true },
+    select: { id: true, name: true, city: true, status: true, ownerId: true, claimedAt: true, verificationLevel: true, plan: true, logoUrl: true },
   });
   if (!business || business.status !== "APPROVED") {
     return new Response("Not found", { status: 404 });
@@ -62,6 +62,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {business.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={business.logoUrl} width={vertical ? 132 : 104} height={vertical ? 132 : 104} alt="" style={{ borderRadius: 24, objectFit: "cover", background: "#fff" }} />
+          ) : null}
           <div style={{ display: "flex", alignSelf: "flex-start", borderRadius: 999, border: "2px solid #FCDD09", padding: "8px 20px", fontSize: 26, fontWeight: 700, color: "#FCDD09" }}>
             ★ {topBadge}
           </div>

@@ -47,12 +47,18 @@ model Business {
 
   // --- pride / identity (Phase 1) ---
   coverImageUrl   String  @default("")
+  logoUrl         String  @default("") // business logo (distinct from founder photo)
   founderName     String  @default("")
   founderPhotoUrl String  @default("")
   founderStory    String  @default("")
   brandStory      String  @default("")
   yearFounded     Int?
   signatureItems  String  @default("[]") // JSON [{title, description, imageUrl}]
+
+  // --- website essentials ---
+  whatsapp String @default("") // raw number for wa.me click-to-chat
+  services String @default("[]") // JSON [{name, description, priceRange, imageUrl, sortOrder}]
+  faqs     String @default("[]") // JSON [{question, answer, sortOrder}]
 
   verificationLevel Int       @default(0) // 0-4
   featured          Boolean   @default(false)
@@ -62,6 +68,7 @@ model Business {
   submittedById     String? // creator of an owner-submitted listing (no owner benefits until approved)
   claimedAt         DateTime?
   createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @default(now()) @updatedAt // freshness signal
 
   // --- source tracking (real-data upgrade) ---
   sourceType          String    @default("admin_created") // google_places | companies_house | openstreetmap | owner_submitted | admin_created | demo | facebook_page | instagram | community_referral | flyer | other

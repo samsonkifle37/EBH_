@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   PRIDE_EVENTS,
   SUPPORT_EVENTS,
+  WEBSITE_EVENTS,
   TRACKABLE_EVENTS,
   isPrideEvent,
   isShareAction,
@@ -21,11 +22,13 @@ describe("event taxonomy", () => {
     expect(PRIDE_EVENTS).toHaveLength(12);
   });
 
-  it("adds support events to the trackable set without touching the pride loop", () => {
+  it("adds support + website events to the trackable set without touching the pride loop", () => {
     expect(SUPPORT_EVENTS).toEqual(["ABOUT_VIEW", "HELP_ARTICLE_VIEW", "REPORT_SUBMITTED", "SAFETY_VIEW"]);
     expect(TRACKABLE_EVENTS).toContain("REPORT_SUBMITTED");
     expect(TRACKABLE_EVENTS).toContain("PROFILE_VIEW");
-    expect(TRACKABLE_EVENTS).toHaveLength(PRIDE_EVENTS.length + SUPPORT_EVENTS.length);
+    expect(TRACKABLE_EVENTS).toContain("LOGO_ADDED");
+    expect(TRACKABLE_EVENTS).toContain("WEBSITE_SCORE_VIEW");
+    expect(TRACKABLE_EVENTS).toHaveLength(PRIDE_EVENTS.length + SUPPORT_EVENTS.length + WEBSITE_EVENTS.length);
   });
 
   it("classifies share actions vs distribution shares", () => {

@@ -29,8 +29,19 @@ export function isPrideEvent(v: unknown): v is PrideEventType {
 export const SUPPORT_EVENTS = ["ABOUT_VIEW", "HELP_ARTICLE_VIEW", "REPORT_SUBMITTED", "SAFETY_VIEW"] as const;
 export type SupportEventType = (typeof SUPPORT_EVENTS)[number];
 
+// "Website essentials" events — owner profile-building + website performance.
+export const WEBSITE_EVENTS = [
+  "LOGO_ADDED",
+  "SERVICES_ADDED",
+  "FAQ_ADDED",
+  "PROFILE_UPDATED",
+  "TRUST_BREAKDOWN_VIEW",
+  "WEBSITE_SCORE_VIEW",
+] as const;
+export type WebsiteEventType = (typeof WEBSITE_EVENTS)[number];
+
 /** Every event the /api/analytics/track endpoint will accept. */
-export const TRACKABLE_EVENTS = [...PRIDE_EVENTS, ...SUPPORT_EVENTS] as const;
+export const TRACKABLE_EVENTS = [...PRIDE_EVENTS, ...SUPPORT_EVENTS, ...WEBSITE_EVENTS] as const;
 export type TrackableEvent = (typeof TRACKABLE_EVENTS)[number];
 
 // Every event in the share family.

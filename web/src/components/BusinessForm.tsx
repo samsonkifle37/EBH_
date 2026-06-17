@@ -10,6 +10,18 @@ export interface SignatureItemValue {
   imageUrl: string;
 }
 
+export interface ServiceValue {
+  name: string;
+  description: string;
+  priceRange: string;
+  imageUrl: string;
+}
+
+export interface FaqValue {
+  question: string;
+  answer: string;
+}
+
 export interface BusinessFormValues {
   name: string;
   category: string;
@@ -23,12 +35,16 @@ export interface BusinessFormValues {
   facebook: string;
   photoUrls: string[];
   coverImageUrl: string;
+  logoUrl: string;
   founderName: string;
   founderPhotoUrl: string;
   founderStory: string;
   brandStory: string;
   yearFounded: number | null;
   signatureItems: SignatureItemValue[];
+  whatsapp: string;
+  services: ServiceValue[];
+  faqs: FaqValue[];
 }
 
 interface Props {
@@ -67,6 +83,7 @@ export default function BusinessForm({ businessId, initial = {} }: Props) {
       hoursPreset: String(form.get("hoursPreset") || "none"),
       photoUrls,
       coverImageUrl: String(form.get("coverImageUrl") || ""),
+      logoUrl: String(form.get("logoUrl") || ""),
       founderName: String(form.get("founderName") || ""),
       founderPhotoUrl: String(form.get("founderPhotoUrl") || ""),
       founderStory: String(form.get("founderStory") || ""),
@@ -79,6 +96,21 @@ export default function BusinessForm({ businessId, initial = {} }: Props) {
           description: String(form.get(`sig${i}desc`) || ""),
         }))
         .filter((s) => s.title || s.imageUrl),
+      whatsapp: String(form.get("whatsapp") || ""),
+      services: [0, 1, 2, 3]
+        .map((i) => ({
+          name: String(form.get(`svc${i}name`) || ""),
+          priceRange: String(form.get(`svc${i}price`) || ""),
+          description: String(form.get(`svc${i}desc`) || ""),
+          imageUrl: String(form.get(`svc${i}img`) || ""),
+        }))
+        .filter((s) => s.name.trim()),
+      faqs: [0, 1, 2, 3]
+        .map((i) => ({
+          question: String(form.get(`faq${i}q`) || ""),
+          answer: String(form.get(`faq${i}a`) || ""),
+        }))
+        .filter((f) => f.question.trim() && f.answer.trim()),
     };
     const res = await fetch(businessId ? `/api/businesses/${businessId}` : "/api/businesses", {
       method: businessId ? "PATCH" : "POST",
@@ -172,9 +204,15 @@ export default function BusinessForm({ businessId, initial = {} }: Props) {
       {/* Boutique profile — the story that makes owners proud to share */}
       <fieldset className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
         <legend className="px-1 text-sm font-bold text-emerald-900">Your story — make your profile shine ✨</legend>
-        <div>
-          <label className="mb-1 block text-sm font-medium">Cover image URL</label>
-          <input name="coverImageUrl" type="url" defaultValue={initial.coverImageUrl} className={inputCls} placeholder="https://…/cover.jpg" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Cover image URL</label>
+            <input name="coverImageUrl" type="url" defaultValue={initial.coverImageUrl} className={inputCls} placeholder="https://…/cover.jpg" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Logo URL</label>
+            <input name="logoUrl" type="url" defaultValue={initial.logoUrl} className={inputCls} placeholder="https://…/logo.png" />
+          </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -209,6 +247,41 @@ export default function BusinessForm({ businessId, initial = {} }: Props) {
                 <input name={`sig${i}title`} defaultValue={s?.title} className={inputCls} placeholder={`Item ${i + 1} name`} />
                 <input name={`sig${i}img`} defaultValue={s?.imageUrl} className={inputCls} placeholder="Image URL" />
                 <input name={`sig${i}desc`} defaultValue={s?.description} className={inputCls} placeholder="Short description" />
+              </div>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      {/* Website essentials — what turns a listing into a usable website */}
+      <fieldset className="space-y-4 rounded-2xl border border-amber-100 bg-amber-50/40 p-4">
+        <legend className="px-1 text-sm font-bold text-amber-900">Your website essentials 🌐</legend>
+        <div>
+          <label className="mb-1 block text-sm font-medium">WhatsApp number</label>
+          <input name="whatsapp" defaultValue={initial.whatsapp} className={inputCls} placeholder="07911 123456 — becomes a click-to-chat button" />
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Services (up to 4)</label>
+          {[0, 1, 2, 3].map((i) => {
+            const s = initial.services?.[i];
+            return (
+              <div key={i} className="grid gap-2 sm:grid-cols-[1fr_110px_1fr_1fr]">
+                <input name={`svc${i}name`} defaultValue={s?.name} className={inputCls} placeholder={`Service ${i + 1}`} />
+                <input name={`svc${i}price`} defaultValue={s?.priceRange} className={inputCls} placeholder="£ from" />
+                <input name={`svc${i}desc`} defaultValue={s?.description} className={inputCls} placeholder="Short description" />
+                <input name={`svc${i}img`} defaultValue={s?.imageUrl} className={inputCls} placeholder="Image URL" />
+              </div>
+            );
+          })}
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">FAQs (up to 4)</label>
+          {[0, 1, 2, 3].map((i) => {
+            const f = initial.faqs?.[i];
+            return (
+              <div key={i} className="grid gap-2 sm:grid-cols-2">
+                <input name={`faq${i}q`} defaultValue={f?.question} className={inputCls} placeholder={`Question ${i + 1}`} />
+                <input name={`faq${i}a`} defaultValue={f?.answer} className={inputCls} placeholder="Answer" />
               </div>
             );
           })}

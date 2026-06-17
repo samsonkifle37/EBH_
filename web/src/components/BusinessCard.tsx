@@ -1,5 +1,6 @@
 import Link from "next/link";
 import RatingStars from "@/components/RatingStars";
+import BusinessLogo from "@/components/BusinessLogo";
 import { VerifiedBadge, FeaturedBadge, OpenNowBadge } from "@/components/Badges";
 import { CATEGORY_LABELS, CITY_LABELS, isCategory, isCity, type Category, type City } from "@/lib/types";
 import type { BusinessSummary } from "@/lib/queries/businesses";
@@ -28,8 +29,11 @@ export default function BusinessCard({ business }: { business: BusinessSummary }
         {business.featured && (
           <div className="absolute left-3 top-3"><FeaturedBadge /></div>
         )}
+        <div className="absolute -bottom-5 left-4">
+          <BusinessLogo name={business.name} logoUrl={business.logoUrl} className="h-12 w-12 text-base shadow-sm ring-2 ring-white" />
+        </div>
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
+      <div className="flex flex-1 flex-col gap-1.5 p-4 pt-7">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold leading-snug text-neutral-900 group-hover:text-emerald-800">{business.name}</h3>
         </div>

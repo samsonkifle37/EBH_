@@ -16,6 +16,7 @@ export const businessInputSchema = z.object({
   photoUrls: z.array(z.string().url()).max(8).optional().default([]),
   // --- pride / identity fields (optional; owners enrich over time) ---
   coverImageUrl: z.string().url().max(400).optional().or(z.literal("")).default(""),
+  logoUrl: z.string().url().max(400).optional().or(z.literal("")).default(""),
   founderName: z.string().max(120).optional().default(""),
   founderPhotoUrl: z.string().url().max(400).optional().or(z.literal("")).default(""),
   founderStory: z.string().max(2000).optional().default(""),
@@ -24,6 +25,18 @@ export const businessInputSchema = z.object({
   signatureItems: z
     .array(z.object({ title: z.string().max(120).default(""), description: z.string().max(400).default(""), imageUrl: z.string().max(400).default("") }))
     .max(6)
+    .optional()
+    .default([]),
+  // --- website essentials ---
+  whatsapp: z.string().max(30).optional().default(""),
+  services: z
+    .array(z.object({ name: z.string().max(120).default(""), description: z.string().max(400).default(""), priceRange: z.string().max(60).default(""), imageUrl: z.string().max(400).default("") }))
+    .max(12)
+    .optional()
+    .default([]),
+  faqs: z
+    .array(z.object({ question: z.string().max(200).default(""), answer: z.string().max(1000).default("") }))
+    .max(12)
     .optional()
     .default([]),
 });

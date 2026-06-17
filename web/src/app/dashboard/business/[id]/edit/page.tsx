@@ -26,6 +26,16 @@ export default async function EditBusinessPage({ params }: { params: Promise<{ i
     const v = JSON.parse(business.signatureItems);
     if (Array.isArray(v)) signatureItems = v;
   } catch {}
+  let services: { name: string; description: string; priceRange: string; imageUrl: string }[] = [];
+  try {
+    const v = JSON.parse(business.services);
+    if (Array.isArray(v)) services = v;
+  } catch {}
+  let faqs: { question: string; answer: string }[] = [];
+  try {
+    const v = JSON.parse(business.faqs);
+    if (Array.isArray(v)) faqs = v;
+  } catch {}
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
@@ -51,12 +61,16 @@ export default async function EditBusinessPage({ params }: { params: Promise<{ i
             facebook: socials.facebook ?? "",
             photoUrls: business.photos.map((p) => p.url),
             coverImageUrl: business.coverImageUrl,
+            logoUrl: business.logoUrl,
             founderName: business.founderName,
             founderPhotoUrl: business.founderPhotoUrl,
             founderStory: business.founderStory,
             brandStory: business.brandStory,
             yearFounded: business.yearFounded,
             signatureItems,
+            whatsapp: business.whatsapp,
+            services,
+            faqs,
           }}
         />
       </div>

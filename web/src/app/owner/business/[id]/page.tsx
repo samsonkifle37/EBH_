@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { trustV2ForBusiness } from "@/lib/trust";
 import { earnedBadges } from "@/lib/domain/badges";
 import { profileCompletion } from "@/lib/domain/profileCompletion";
+import { parseServices, parseFaqs } from "@/lib/website";
+import { SHARE_DISTRIBUTION_ACTIONS, type PrideEventType } from "@/lib/analytics/events";
 import BadgeRail from "@/components/BadgeRail";
 
 export const metadata = { title: "Manage business" };
@@ -44,6 +46,20 @@ export default async function OwnerBusiness({ params }: { params: Promise<{ id: 
     photoCount: business.photos.length,
   });
 
+  // "Finish your website" checklist — the website-essentials owners care about.
+  const shared = !!(await db.prideEvent.findFirst({
+    where: { businessId: id, action: { in: SHARE_DISTRIBUTION_ACTIONS as PrideEventType[] } },
+    select: { id: true },
+  }));
+  const checklist = [
+    { label: "Add your logo", done: !!business.logoUrl },
+    { label: "Add WhatsApp", done: !!business.whatsapp },
+    { label: "Add services", done: parseServices(business.services).length > 0 },
+    { label: "Add FAQs", done: parseFaqs(business.faqs).length > 0 },
+    { label: "Share your website", done: shared },
+  ];
+  const remaining = checklist.filter((c) => !c.done);
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <nav className="text-sm text-neutral-400">
@@ -53,9 +69,30 @@ export default async function OwnerBusiness({ params }: { params: Promise<{ id: 
         <h1 className="text-2xl font-bold tracking-tight">{business.name}</h1>
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">Trust {score}/100</span>
       </div>
-      <p className="mt-1 text-sm text-neutral-500">{business.category} · {business.city} · plan {business.plan}</p>
+      <p className="mt-1 text-sm text-neutral-500">{business.category} · {business.city} · your EBH business website</p>
 
       {badges.length > 0 && <div className="mt-4"><BadgeRail badges={badges} /></div>}
+
+      {/* Finish your website checklist */}
+      <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-semibold text-amber-900">{remaining.length === 0 ? "🎉 Your website is ready to share" : "Finish your website"}</p>
+          <span className="text-xs font-semibold text-amber-700">{checklist.length - remaining.length}/{checklist.length}</span>
+        </div>
+        <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+          {checklist.map((c) => (
+            <li key={c.label} className="flex items-center gap-2 text-sm">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${c.done ? "bg-emerald-100 text-emerald-700" : "bg-white text-neutral-400 ring-1 ring-neutral-200"}`} aria-hidden>{c.done ? "✓" : "○"}</span>
+              <span className={c.done ? "text-neutral-500 line-through" : "font-medium text-amber-900"}>{c.label}</span>
+            </li>
+          ))}
+        </ul>
+        {remaining.length > 0 && (
+          <Link href={`/dashboard/business/${id}/edit`} className="mt-3 inline-block rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+            {remaining[0].label} →
+          </Link>
+        )}
+      </div>
 
       {/* Profile completion — celebration, not a chore */}
       <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">

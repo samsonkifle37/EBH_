@@ -27,7 +27,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
 
   return (
     <main className="mx-auto max-w-xl px-4 py-12">
-      <h1 className="text-2xl font-bold tracking-tight">Claim {business.name}</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Claim {business.name}&rsquo;s website</h1>
       <p className="mt-1 text-sm text-neutral-500">{business.address}</p>
 
       {business.ownerId ? (
@@ -49,12 +49,12 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
       ) : (
         <>
           <div className="mt-6 rounded-2xl bg-neutral-50 p-4 text-sm text-neutral-600">
-            <p className="font-semibold text-neutral-800">Claiming unlocks:</p>
+            <p className="font-semibold text-neutral-800">Your free business website includes:</p>
             <ul className="mt-2 space-y-1">
-              <li>✓ Owner badge and +20 trust once approved</li>
-              <li>✓ Edit your listing, photos and hours</li>
-              <li>✓ Respond publicly to reviews</li>
-              <li>✓ Analytics dashboard</li>
+              <li>✓ A verified, shareable web page — your logo, WhatsApp, services &amp; FAQ</li>
+              <li>✓ Owner badge and a higher trust score</li>
+              <li>✓ A share kit &amp; QR code for your shop window and Instagram bio</li>
+              <li>✓ Reviews you can respond to, plus a website analytics dashboard</li>
             </ul>
           </div>
           <div className="mt-6">
