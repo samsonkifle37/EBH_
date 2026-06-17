@@ -29,6 +29,7 @@ describe("event taxonomy", () => {
     expect(TRACKABLE_EVENTS).toContain("LOGO_ADDED");
     expect(TRACKABLE_EVENTS).toContain("WEBSITE_SCORE_VIEW");
     expect(TRACKABLE_EVENTS).toContain("WEBSITE_MODE_VIEW");
+    expect(TRACKABLE_EVENTS).toContain("IMAGE_UPLOADED");
     expect(TRACKABLE_EVENTS).toHaveLength(PRIDE_EVENTS.length + SUPPORT_EVENTS.length + WEBSITE_EVENTS.length);
   });
 

@@ -45,11 +45,11 @@ export default async function AdminPage() {
       <div className="mt-6">
         <AnalyticsCards
           stats={[
-            { label: "Businesses", value: totalBiz, hint: `${pendingBiz} pending` },
-            { label: "Events", value: totalEvents, hint: `${pendingEvents} pending` },
-            { label: "Users", value: totalUsers },
-            { label: "Reviews", value: totalReviews },
-            { label: "Active ads", value: activeAds },
+            { label: "Businesses", value: totalBiz, hint: `${pendingBiz} pending`, href: "/admin/businesses" },
+            { label: "Events", value: totalEvents, hint: `${pendingEvents} pending`, href: "/admin/events" },
+            { label: "Users", value: totalUsers, href: "/admin/users" },
+            { label: "Reviews", value: totalReviews, href: "/admin/reviews" },
+            { label: "Active ads", value: activeAds, href: "/admin/ads" },
           ]}
         />
       </div>

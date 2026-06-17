@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, CATEGORY_LABELS, CITIES, CITY_LABELS } from "@/lib/types";
+import ImageUploadField from "@/components/ImageUploadField";
+import ImageUploadList from "@/components/ImageUploadList";
 
 export interface SignatureItemValue {
   title: string;
@@ -196,33 +198,22 @@ export default function BusinessForm({ businessId, initial = {} }: Props) {
           <option value="office">Office (9:00–17:30, Mon–Fri)</option>
         </select>
       </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">Photo URLs (one per line, up to 8)</label>
-        <textarea name="photoUrls" rows={3} defaultValue={(initial.photoUrls ?? []).join("\n")} className={inputCls} placeholder="https://…/photo1.jpg" />
-      </div>
+      <ImageUploadList name="photoUrls" businessId={businessId} initialUrls={initial.photoUrls ?? []} />
 
       {/* Boutique profile — the story that makes owners proud to share */}
       <fieldset className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
         <legend className="px-1 text-sm font-bold text-emerald-900">Your story — make your profile shine ✨</legend>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Cover image URL</label>
-            <input name="coverImageUrl" type="url" defaultValue={initial.coverImageUrl} className={inputCls} placeholder="https://…/cover.jpg" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Logo URL</label>
-            <input name="logoUrl" type="url" defaultValue={initial.logoUrl} className={inputCls} placeholder="https://…/logo.png" />
-          </div>
+          <ImageUploadField name="coverImageUrl" kind="cover" businessId={businessId} initialUrl={initial.coverImageUrl} label="Cover image" aspect="aspect-[3/1]" />
+          <ImageUploadField name="logoUrl" kind="logo" businessId={businessId} initialUrl={initial.logoUrl} label="Logo" aspect="aspect-square" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">Founder name</label>
             <input name="founderName" defaultValue={initial.founderName} className={inputCls} placeholder="Who runs the business?" />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Founder photo URL</label>
-            <input name="founderPhotoUrl" type="url" defaultValue={initial.founderPhotoUrl} className={inputCls} placeholder="https://…/founder.jpg" />
-          </div>
+          <ImageUploadField name="founderPhotoUrl" kind="founder" businessId={businessId} initialUrl={initial.founderPhotoUrl} label="Founder photo" aspect="aspect-square" />
+
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">Founder story</label>

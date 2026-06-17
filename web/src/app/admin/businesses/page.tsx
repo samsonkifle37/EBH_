@@ -2,8 +2,18 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireAdminPage } from "@/lib/adminGuard";
 import { normalizeName } from "@/lib/domain/match";
+import {
+  ADMIN_FILTERS,
+  isAdminFilter,
+  matchesChip,
+  buildHaystack,
+  searchMatches,
+  type AdminFilter,
+  type BizFlags,
+} from "@/lib/adminBusinessFilter";
 import AdminAction from "@/components/AdminAction";
 import AdminBusinessTools from "@/components/AdminBusinessTools";
+import AdminBusinessSearch from "@/components/AdminBusinessSearch";
 
 export const metadata = { title: "Admin — Businesses" };
 
@@ -21,23 +31,18 @@ const SOURCE_BADGES: Record<string, { label: string; cls: string }> = {
   demo: { label: "DEMO DATA", cls: "bg-red-50 text-red-600" },
 };
 
-type Filter = "all" | "ready_to_approve" | "needs_image" | "needs_contact" | "duplicate_candidates" | "auto_approved";
-
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: "all", label: "All pending" },
-  { key: "ready_to_approve", label: "Ready to approve" },
-  { key: "needs_contact", label: "Needs contact" },
-  { key: "needs_image", label: "Needs image" },
-  { key: "duplicate_candidates", label: "Duplicate candidates" },
-  { key: "auto_approved", label: "Recently auto approved" },
-];
-
 const RENDER_CAP = 300;
 
-export default async function AdminBusinessesPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
+// module-scope keeps the server-component render pure (no Date.now() in body)
+function sevenDaysAgoMs(now: number = Date.now()): number {
+  return now - 7 * 24 * 3600 * 1000;
+}
+
+export default async function AdminBusinessesPage({ searchParams }: { searchParams: Promise<{ filter?: string; q?: string }> }) {
   await requireAdminPage();
-  const { filter: filterParam } = await searchParams;
-  const filter: Filter = (FILTERS.some((f) => f.key === filterParam) ? filterParam : "all") as Filter;
+  const sp = await searchParams;
+  const filter: AdminFilter = isAdminFilter(sp.filter) ? sp.filter : "all";
+  const q = (sp.q ?? "").trim();
 
   const businesses = await db.business.findMany({
     orderBy: [{ status: "desc" }, { createdAt: "desc" }],
@@ -49,8 +54,6 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
   });
 
   type Row = (typeof businesses)[number];
-  const hasImage = (b: Row) => b._count.photos > 0;
-  const hasContact = (b: Row) => !!(b.phone || b.website || b.email);
 
   // names shared by >1 listing → duplicate candidates
   const nameCounts = new Map<string, number>();
@@ -58,48 +61,46 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
     const n = normalizeName(b.name);
     nameCounts.set(n, (nameCounts.get(n) ?? 0) + 1);
   }
-  const isDuplicateCandidate = (b: Row) => (nameCounts.get(normalizeName(b.name)) ?? 0) > 1;
+
+  const sevenDaysAgo = sevenDaysAgoMs();
+  const flagsOf = (b: Row): BizFlags => ({
+    isPending: b.status === "PENDING",
+    hasImage: b._count.photos > 0 || !!b.coverImageUrl || !!b.logoUrl,
+    hasContact: !!(b.phone || b.website || b.email),
+    isDuplicate: (nameCounts.get(normalizeName(b.name)) ?? 0) > 1,
+    needsEnrichment: b.reviewBucket === "needs_enrichment",
+    needsContactBucket: b.reviewBucket === "needs_contact_info",
+    autoApprovedRecent: b.approvedBy === "system" && b.createdAt.getTime() >= sevenDaysAgo,
+  });
+  const haystackOf = (b: Row): string =>
+    buildHaystack({
+      name: b.name,
+      city: b.city,
+      category: b.category,
+      source: SOURCE_BADGES[b.sourceType]?.label ?? b.sourceType,
+      phone: b.phone,
+      website: b.website,
+      email: b.email,
+      status: b.status,
+      claimed: !!b.ownerId,
+      verified: b.verificationLevel >= 1,
+    });
 
   const mergeTargets = businesses.filter((b) => b.sourceType !== "demo").map((b) => ({ id: b.id, name: b.name }));
 
-  const sevenDaysAgo = Date.now() - 7 * 24 * 3600 * 1000;
-  const inMainQueue = (b: Row) => b.status === "PENDING" && b.reviewBucket !== "needs_enrichment" && b.reviewBucket !== "needs_contact_info";
-  const isNeedsContact = (b: Row) => b.reviewBucket === "needs_contact_info" || (b.status === "PENDING" && hasImage(b) && !hasContact(b));
-  const isRecentlyAutoApproved = (b: Row) => b.approvedBy === "system" && b.createdAt.getTime() >= sevenDaysAgo;
+  // chip counts = per-chip totals (independent of search)
+  const counts = Object.fromEntries(
+    ADMIN_FILTERS.map((f) => [f.key, businesses.filter((b) => matchesChip(f.key, flagsOf(b))).length]),
+  ) as Record<AdminFilter, number>;
 
-  // counts for the filter chips
-  const counts = {
-    all: businesses.filter(inMainQueue).length,
-    ready_to_approve: businesses.filter((b) => b.status === "PENDING" && hasImage(b) && hasContact(b)).length,
-    needs_contact: businesses.filter(isNeedsContact).length,
-    needs_image: businesses.filter((b) => b.reviewBucket === "needs_enrichment").length,
-    duplicate_candidates: businesses.filter((b) => b.status === "PENDING" && isDuplicateCandidate(b)).length,
-    auto_approved: businesses.filter(isRecentlyAutoApproved).length,
-  };
-
-  function matches(b: Row): boolean {
-    switch (filter) {
-      case "ready_to_approve":
-        return b.status === "PENDING" && hasImage(b) && hasContact(b);
-      case "needs_contact":
-        return isNeedsContact(b);
-      case "needs_image":
-        return b.reviewBucket === "needs_enrichment";
-      case "duplicate_candidates":
-        return b.status === "PENDING" && isDuplicateCandidate(b);
-      case "auto_approved":
-        return isRecentlyAutoApproved(b);
-      default:
-        // main queue: pending, excluding the needs-image and needs-contact buckets
-        return inMainQueue(b);
-    }
-  }
-
-  const filtered = businesses.filter(matches);
+  // displayed = active chip ∩ search
+  const filtered = businesses.filter((b) => matchesChip(filter, flagsOf(b)) && searchMatches(haystackOf(b), q));
   const shown = filtered.slice(0, RENDER_CAP);
+  const chipHref = (key: AdminFilter) => `/admin/businesses?filter=${key}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
 
   function row(b: Row) {
     const source = SOURCE_BADGES[b.sourceType] ?? SOURCE_BADGES.admin_created;
+    const f = flagsOf(b);
     const chMatched = b.companyNumber || b.sources.some((s) => s.sourceType === "companies_house");
     return (
       <li key={b.id} className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-4">
@@ -114,8 +115,8 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
               {b.reviewBucket === "needs_enrichment" && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700">needs image</span>}
               <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${source.cls}`}>{source.label}</span>
               {chMatched && <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">CH ✓</span>}
-              {!hasImage(b) && <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-400">no image</span>}
-              {!hasContact(b) && <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-400">no contact</span>}
+              {!f.hasImage && <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-400">no image</span>}
+              {!f.hasContact && <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-400">no contact</span>}
               <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-500">conf {b.dataConfidenceScore}</span>
             </div>
             <p className="mt-0.5 text-xs text-neutral-400">
@@ -155,10 +156,11 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
       <h1 className="mt-2 text-2xl font-bold tracking-tight">Businesses</h1>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
+        {ADMIN_FILTERS.map((f) => (
           <Link
             key={f.key}
-            href={`/admin/businesses?filter=${f.key}`}
+            href={chipHref(f.key)}
+            aria-current={filter === f.key ? "page" : undefined}
             className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${filter === f.key ? "border-emerald-600 bg-emerald-50 text-emerald-700" : "border-neutral-300 text-neutral-600 hover:border-emerald-600 hover:text-emerald-700"}`}
           >
             {f.label} <span className="ml-1 text-neutral-400">{counts[f.key]}</span>
@@ -166,13 +168,18 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
         ))}
       </div>
 
+      <AdminBusinessSearch />
+
       <p className="mt-5 text-sm text-neutral-500">
-        Showing {shown.length}{filtered.length > shown.length ? ` of ${filtered.length}` : ""} listings.
-        {filter === "all" && " The Needs image queue is hidden here — see the chip above."}
+        Showing {shown.length}{filtered.length > shown.length ? ` of ${filtered.length}` : ""} listings
+        {q ? ` matching “${q}”` : ""}.
+        {filter === "all" && !q && " The Needs image queue is hidden here — see the chip above."}
       </p>
 
       {shown.length === 0 ? (
-        <p className="mt-4 text-sm text-neutral-400">Nothing in this queue 🎉</p>
+        <p className="mt-4 rounded-2xl border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-400">
+          {q ? `No businesses match “${q}” in this queue. Try a different search or clear it.` : "Nothing in this queue 🎉"}
+        </p>
       ) : (
         <ul className="mt-3 space-y-3">{shown.map(row)}</ul>
       )}
