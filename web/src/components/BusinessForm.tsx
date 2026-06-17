@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES, CATEGORY_LABELS, CITIES, CITY_LABELS } from "@/lib/types";
+import { CATEGORIES, CATEGORY_LABELS } from "@/lib/types";
 import ImageUploadField from "@/components/ImageUploadField";
 import ImageUploadList from "@/components/ImageUploadList";
+import LocationInput from "@/components/LocationInput";
 
 export interface SignatureItemValue {
   title: string;
@@ -28,6 +29,9 @@ export interface BusinessFormValues {
   name: string;
   category: string;
   city: string;
+  county: string;
+  region: string;
+  country: string;
   address: string;
   postcode: string;
   phone: string;
@@ -75,6 +79,9 @@ export default function BusinessForm({ businessId, initial = {} }: Props) {
       name: String(form.get("name") || ""),
       category: String(form.get("category") || ""),
       city: String(form.get("city") || ""),
+      county: String(form.get("cityCounty") || ""),
+      region: String(form.get("cityRegion") || ""),
+      country: String(form.get("cityCountry") || "United Kingdom"),
       address: String(form.get("address") || ""),
       postcode: String(form.get("postcode") || ""),
       phone: String(form.get("phone") || ""),
@@ -145,15 +152,7 @@ export default function BusinessForm({ businessId, initial = {} }: Props) {
             ))}
           </select>
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">City *</label>
-          <select name="city" required defaultValue={initial.city ?? ""} className={inputCls}>
-            <option value="" disabled>Choose…</option>
-            {CITIES.map((c) => (
-              <option key={c} value={c}>{CITY_LABELS[c]}</option>
-            ))}
-          </select>
-        </div>
+        <LocationInput name="city" label="City / town *" required defaultValue={initial.city} />
       </div>
       <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
         <div>

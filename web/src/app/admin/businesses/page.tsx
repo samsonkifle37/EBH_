@@ -153,7 +153,10 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
       <nav className="text-sm text-neutral-400">
         <Link href="/admin" className="hover:text-emerald-700">Admin</Link> / <span className="text-neutral-600">Businesses</span>
       </nav>
-      <h1 className="mt-2 text-2xl font-bold tracking-tight">Businesses</h1>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">Businesses</h1>
+        <Link href="/admin/businesses/new" className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">+ New business</Link>
+      </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
         {ADMIN_FILTERS.map((f) => (

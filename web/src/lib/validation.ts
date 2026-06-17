@@ -4,7 +4,11 @@ import { CATEGORIES, CITIES, EVENT_TYPES } from "@/lib/types";
 export const businessInputSchema = z.object({
   name: z.string().min(2).max(100),
   category: z.enum(CATEGORIES),
-  city: z.enum(CITIES),
+  // UK-wide: any town/borough, not a fixed list (LocationInput normalizes it).
+  city: z.string().min(1).max(120),
+  county: z.string().max(120).optional().default(""),
+  region: z.string().max(120).optional().default(""),
+  country: z.string().max(120).optional().default("United Kingdom"),
   address: z.string().max(200).optional().default(""),
   postcode: z.string().max(10).optional().default(""),
   phone: z.string().max(20).optional().default(""),

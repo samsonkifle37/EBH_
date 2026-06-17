@@ -42,6 +42,17 @@ export default async function AdminPage() {
     <main className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Platform Admin</h1>
 
+      <form action="/admin/search" method="get" role="search" className="mt-4 flex gap-2">
+        <input
+          type="search"
+          name="q"
+          aria-label="Search businesses, users, events and reports"
+          placeholder="Search businesses, users, events, reports…"
+          className="min-h-11 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600"
+        />
+        <button className="min-h-11 shrink-0 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Search</button>
+      </form>
+
       <div className="mt-6">
         <AnalyticsCards
           stats={[
