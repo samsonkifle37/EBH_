@@ -17,8 +17,11 @@ model User {
   passwordHash String
   name         String
   // comma-separated roles: USER,BUSINESS_OWNER,EVENT_ORGANIZER,ADMIN
-  roles        String   @default("USER")
-  createdAt    DateTime @default(now())
+  roles           String    @default("USER")
+  status          String    @default("active") // active | suspended | deactivated
+  suspendedAt     DateTime?
+  suspendedReason String    @default("")
+  createdAt       DateTime  @default(now())
 
   businesses    Business[]
   reviews       Review[]
@@ -36,6 +39,9 @@ model Business {
   description       String    @default("")
   address           String    @default("")
   city              String
+  county            String    @default("")
+  region            String    @default("")
+  country           String    @default("United Kingdom")
   postcode          String    @default("")
   lat               Float?
   lng               Float?
@@ -243,6 +249,21 @@ model AnalyticsEvent {
 
   @@index([type, businessId, createdAt])
   @@index([type, eventId, createdAt])
+}
+
+// --- Admin audit trail: who did what to whom ---
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actorEmail String   @default("")
+  targetType String // user | business | event | lead
+  targetId   String
+  action     String // USER_ROLE_CHANGED | USER_SUSPENDED | USER_UPDATED | USER_DELETED | ...
+  metadata   String   @default("{}") // JSON snapshot of the change
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([actorId, createdAt])
 }
 
 // --- Trust & safety: user reports / moderation queue ---

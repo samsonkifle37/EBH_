@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES, CATEGORY_LABELS, CITIES, CITY_LABELS } from "@/lib/types";
+import { CATEGORIES, CATEGORY_LABELS } from "@/lib/types";
+import LocationInput from "@/components/LocationInput";
 
 const SOURCE_OPTIONS = [
   { value: "facebook_page", label: "Facebook page" },
@@ -31,6 +32,9 @@ const EMPTY = {
   sourceType: "facebook_page",
   sourceUrl: "",
   city: "",
+  county: "",
+  region: "",
+  country: "United Kingdom",
   category: "",
   phone: "",
   website: "",
@@ -44,6 +48,7 @@ export default function LeadCaptureForm() {
   const [duplicate, setDuplicate] = useState<DupInfo | null>(null);
   const [error, setError] = useState("");
   const [added, setAdded] = useState<SessionItem[]>([]);
+  const [locKey, setLocKey] = useState(0); // bump to reset LocationInput after add
 
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -62,6 +67,9 @@ export default function LeadCaptureForm() {
           sourceType: form.sourceType,
           sourceUrl: form.sourceUrl.trim(),
           city: form.city || undefined,
+          county: form.county || undefined,
+          region: form.region || undefined,
+          country: form.country || undefined,
           category: form.category || undefined,
           phone: form.phone.trim(),
           website: form.website.trim(),
@@ -84,6 +92,7 @@ export default function LeadCaptureForm() {
           ...prev,
         ]);
         setForm({ ...EMPTY, sourceType: form.sourceType });
+        setLocKey((k) => k + 1);
         setDuplicate(null);
         router.refresh();
       }
@@ -125,13 +134,13 @@ export default function LeadCaptureForm() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-xs font-semibold text-neutral-500">City</label>
-            <select value={form.city} onChange={(e) => set("city", e.target.value)} className={input}>
-              <option value="">—</option>
-              {CITIES.map((c) => (
-                <option key={c} value={c}>{CITY_LABELS[c]}</option>
-              ))}
-            </select>
+            <label className="text-xs font-semibold text-neutral-500">City / town</label>
+            <LocationInput
+              key={locKey}
+              defaultValue={form.city}
+              placeholder="Any UK town or borough…"
+              onChange={(loc) => setForm((f) => ({ ...f, city: loc.city, county: loc.county, region: loc.region, country: loc.country }))}
+            />
           </div>
           <div>
             <label className="text-xs font-semibold text-neutral-500">Category</label>

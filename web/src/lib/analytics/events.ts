@@ -42,8 +42,23 @@ export const WEBSITE_EVENTS = [
 ] as const;
 export type WebsiteEventType = (typeof WEBSITE_EVENTS)[number];
 
+// Admin/ops events — user management, direct creation, location, image ops.
+export const ADMIN_EVENTS = [
+  "USER_UPDATED",
+  "USER_SUSPENDED",
+  "USER_ROLE_CHANGED",
+  "USER_DELETED",
+  "ADMIN_BUSINESS_CREATED",
+  "ADMIN_EVENT_CREATED",
+  "ADMIN_LEAD_CREATED",
+  "CITY_ADDED",
+  "IMAGE_DELETED",
+  "IMAGE_REORDERED",
+] as const;
+export type AdminEventType = (typeof ADMIN_EVENTS)[number];
+
 /** Every event the /api/analytics/track endpoint will accept. */
-export const TRACKABLE_EVENTS = [...PRIDE_EVENTS, ...SUPPORT_EVENTS, ...WEBSITE_EVENTS] as const;
+export const TRACKABLE_EVENTS = [...PRIDE_EVENTS, ...SUPPORT_EVENTS, ...WEBSITE_EVENTS, ...ADMIN_EVENTS] as const;
 export type TrackableEvent = (typeof TRACKABLE_EVENTS)[number];
 
 // Every event in the share family.

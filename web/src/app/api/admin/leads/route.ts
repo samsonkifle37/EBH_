@@ -6,7 +6,8 @@ import { getSession } from "@/lib/session";
 import { slugify } from "@/lib/domain/slug";
 import { findDuplicate, normalizeName } from "@/lib/domain/match";
 import { trustScoreForBusiness, isManualLeadSource } from "@/lib/domain/trust";
-import { CATEGORIES, CITIES } from "@/lib/types";
+import { recordPrideEvent } from "@/lib/analytics/record";
+import { CATEGORIES } from "@/lib/types";
 
 const LEAD_SOURCES = ["facebook_page", "instagram", "community_referral", "flyer", "other"] as const;
 
@@ -14,7 +15,11 @@ const schema = z.object({
   businessName: z.string().min(2).max(120),
   sourceType: z.enum(LEAD_SOURCES),
   sourceUrl: z.string().max(300).optional().default(""),
-  city: z.enum(CITIES).optional(),
+  // UK-wide: any town/borough, not a fixed list.
+  city: z.string().max(120).optional(),
+  county: z.string().max(120).optional().default(""),
+  region: z.string().max(120).optional().default(""),
+  country: z.string().max(120).optional().default("United Kingdom"),
   category: z.enum(CATEGORIES).optional(),
   phone: z.string().max(40).optional().default(""),
   website: z.string().max(200).optional().default(""),
@@ -82,7 +87,10 @@ export async function POST(req: Request) {
       name: d.businessName,
       slug,
       category: d.category ?? "community-organizations",
-      city: d.city ?? "london",
+      city: d.city || "London",
+      county: d.county,
+      region: d.region,
+      country: d.country,
       phone: d.phone,
       website: d.website,
       description: d.notes,
@@ -103,6 +111,9 @@ export async function POST(req: Request) {
       },
     },
   });
+
+  void recordPrideEvent({ action: "ADMIN_LEAD_CREATED", businessId: business.id, visitorId: "admin" });
+  if (d.city) void recordPrideEvent({ action: "CITY_ADDED", businessId: business.id, visitorId: "admin", channel: d.city });
 
   return NextResponse.json({
     ok: true,

@@ -35,7 +35,7 @@ export default async function AdminUsersPage() {
           {users.map((u) => (
             <li key={u.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
               <div className="min-w-0">
-                <p className="font-semibold text-neutral-900">{u.name}</p>
+                <Link href={`/admin/users/${u.id}`} className="font-semibold text-neutral-900 hover:text-emerald-700">{u.name}</Link>
                 <p className="text-xs text-neutral-400">{u.email} · joined {u.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">

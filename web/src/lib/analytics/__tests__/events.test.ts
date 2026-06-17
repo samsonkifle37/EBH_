@@ -3,6 +3,7 @@ import {
   PRIDE_EVENTS,
   SUPPORT_EVENTS,
   WEBSITE_EVENTS,
+  ADMIN_EVENTS,
   TRACKABLE_EVENTS,
   isPrideEvent,
   isShareAction,
@@ -30,7 +31,9 @@ describe("event taxonomy", () => {
     expect(TRACKABLE_EVENTS).toContain("WEBSITE_SCORE_VIEW");
     expect(TRACKABLE_EVENTS).toContain("WEBSITE_MODE_VIEW");
     expect(TRACKABLE_EVENTS).toContain("IMAGE_UPLOADED");
-    expect(TRACKABLE_EVENTS).toHaveLength(PRIDE_EVENTS.length + SUPPORT_EVENTS.length + WEBSITE_EVENTS.length);
+    expect(TRACKABLE_EVENTS).toContain("USER_ROLE_CHANGED");
+    expect(TRACKABLE_EVENTS).toContain("CITY_ADDED");
+    expect(TRACKABLE_EVENTS).toHaveLength(PRIDE_EVENTS.length + SUPPORT_EVENTS.length + WEBSITE_EVENTS.length + ADMIN_EVENTS.length);
   });
 
   it("classifies share actions vs distribution shares", () => {
