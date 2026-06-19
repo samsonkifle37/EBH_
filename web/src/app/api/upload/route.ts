@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { getSession, hasRole } from "@/lib/session";
 import { validateUpload, storageKey } from "@/lib/upload";
+import { rateLimitDb, HOUR } from "@/lib/rateLimitDb";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,10 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
+  if (!(await rateLimitDb(`upload:user:${session.userId}`, 60, HOUR))) {
+    return NextResponse.json({ error: "Too many uploads. Please slow down and try again shortly." }, { status: 429 });
+  }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json({ error: "Image storage isn't configured yet. Add a Vercel Blob store, then try again." }, { status: 503 });

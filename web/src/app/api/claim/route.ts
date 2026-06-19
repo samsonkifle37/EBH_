@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { rateLimitDb, HOUR } from "@/lib/rateLimitDb";
 
 const schema = z.object({
   businessId: z.string().min(1),
@@ -18,6 +19,10 @@ const schema = z.object({
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Sign in to claim a business" }, { status: 401 });
+
+  if (!(await rateLimitDb(`claim:user:${session.userId}`, 10, HOUR))) {
+    return NextResponse.json({ error: "Too many claim attempts. Please try again later." }, { status: 429 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);

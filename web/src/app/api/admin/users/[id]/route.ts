@@ -57,7 +57,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const nextHasAdmin = next.includes("ADMIN");
     const guard = roleChangeBlocked({ actorId: session.userId, targetId: id, targetHasAdmin, nextHasAdmin, otherActiveAdmins: await otherActiveAdmins(id) });
     if (guard.blocked) return NextResponse.json({ error: guard.reason }, { status: 409 });
-    await db.user.update({ where: { id }, data: { roles: next.join(",") } });
+    await db.user.update({ where: { id }, data: { roles: next.join(","), tokenVersion: { increment: 1 } } });
     await audit(session.userId, session.name, id, "USER_ROLE_CHANGED", { from: target.roles, to: next.join(",") }, "USER_ROLE_CHANGED");
     return NextResponse.json({ ok: true, roles: next });
   }
@@ -66,7 +66,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const guard = suspendBlocked(isSelf);
     if (guard.blocked) return NextResponse.json({ error: guard.reason }, { status: 409 });
     if (targetHasAdmin && (await otherActiveAdmins(id)) === 0) return NextResponse.json({ error: "Can't suspend the last active admin." }, { status: 409 });
-    await db.user.update({ where: { id }, data: { status: "suspended", suspendedAt: new Date(), suspendedReason: d.reason } });
+    await db.user.update({ where: { id }, data: { status: "suspended", suspendedAt: new Date(), suspendedReason: d.reason, tokenVersion: { increment: 1 } } });
     await audit(session.userId, session.name, id, "USER_SUSPENDED", { reason: d.reason }, "USER_SUSPENDED");
     return NextResponse.json({ ok: true });
   }
@@ -80,14 +80,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (d.action === "deactivate") {
     if (isSelf) return NextResponse.json({ error: "You can't deactivate your own account." }, { status: 409 });
     if (targetHasAdmin && (await otherActiveAdmins(id)) === 0) return NextResponse.json({ error: "Can't deactivate the last active admin." }, { status: 409 });
-    await db.user.update({ where: { id }, data: { status: "deactivated" } });
+    await db.user.update({ where: { id }, data: { status: "deactivated", tokenVersion: { increment: 1 } } });
     await audit(session.userId, session.name, id, "USER_UPDATED", { status: "deactivated" }, "USER_UPDATED");
     return NextResponse.json({ ok: true });
   }
 
   // reset_password — generate a temporary password, return it once to the admin.
   const tempPassword = `EBH-${randomBytes(9).toString("base64url")}`;
-  await db.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(tempPassword, 10) } });
+  await db.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(tempPassword, 10), tokenVersion: { increment: 1 } } });
   await audit(session.userId, session.name, id, "USER_UPDATED", { passwordReset: true }, "USER_UPDATED");
   return NextResponse.json({ ok: true, tempPassword });
 }
@@ -116,6 +116,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       roles: "USER",
       status: "deactivated",
       suspendedReason: "account anonymized by admin",
+      tokenVersion: { increment: 1 },
     },
   });
   await audit(session.userId, session.name, id, "USER_DELETED", { anonymized: true }, "USER_DELETED");

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, createSessionCookie } from "@/lib/session";
+import { getSession } from "@/lib/session";
 import { addRole } from "@/lib/auth";
 import { slugify } from "@/lib/domain/slug";
 import { eventInputSchema } from "@/lib/validation";
@@ -48,8 +48,9 @@ export async function POST(req: Request) {
     },
   });
 
-  const roles = await addRole(session.userId, "EVENT_ORGANIZER");
-  await createSessionCookie({ userId: session.userId, name: session.name, roles });
+  // Grant the organizer role in the DB; getSession derives roles live, so no
+  // session re-issue is needed for it to take effect on the next request.
+  await addRole(session.userId, "EVENT_ORGANIZER");
 
   return NextResponse.json({ ok: true, id: event.id, slug: event.slug });
 }

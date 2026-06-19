@@ -7,5 +7,8 @@ export async function register() {
     // Fail fast: production must not boot without full Stripe config, otherwise
     // the dev-mode payment fallbacks could grant benefits without Stripe.
     assertStripeProductionConfig();
+    // Fail fast: production must not run with a default session signing secret.
+    const { assertAuthConfig } = await import("@/lib/authConfig");
+    assertAuthConfig();
   }
 }

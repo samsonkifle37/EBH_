@@ -16,7 +16,30 @@ import {
  *      for 30 days (ebh_attr) so downstream views/contacts can be credited.
  * No PII; no third parties.
  */
+const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // CSRF defense-in-depth for API mutations. Browsers send an Origin header on
+  // same-origin non-GET requests; a cross-site forgery would carry a foreign
+  // Origin → rejected. The Stripe webhook is cross-origin + signature-verified,
+  // so it's exempt. (Requests with no Origin — server-to-server/tools — aren't a
+  // browser CSRF vector and are allowed.)
+  if (pathname.startsWith("/api/")) {
+    if (MUTATING.has(req.method.toUpperCase()) && !pathname.startsWith("/api/webhooks/")) {
+      const origin = req.headers.get("origin");
+      if (origin) {
+        try {
+          if (new URL(origin).host !== req.headers.get("host")) return new NextResponse("Bad origin", { status: 403 });
+        } catch {
+          return new NextResponse("Bad origin", { status: 403 });
+        }
+      }
+    }
+    return NextResponse.next(); // don't set analytics cookies on API responses
+  }
+
   const res = NextResponse.next();
   const secure = process.env.NODE_ENV === "production";
 
@@ -50,6 +73,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Skip static assets and API routes (API reads cookies directly).
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
+  // Run on pages (analytics cookies) and API routes (CSRF check); skip static.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

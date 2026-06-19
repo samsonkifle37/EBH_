@@ -21,6 +21,7 @@ model User {
   status          String    @default("active") // active | suspended | deactivated
   suspendedAt     DateTime?
   suspendedReason String    @default("")
+  tokenVersion    Int       @default(0) // bump to revoke all existing sessions
   createdAt       DateTime  @default(now())
 
   businesses    Business[]
@@ -249,6 +250,13 @@ model AnalyticsEvent {
 
   @@index([type, businessId, createdAt])
   @@index([type, eventId, createdAt])
+}
+
+// --- Durable rate limiting (fixed window) for auth/abuse-prone endpoints ---
+model RateLimit {
+  key         String   @id // e.g. "signin:ip:1.2.3.4" or "signin:email:x@y.z"
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
 }
 
 // --- Admin audit trail: who did what to whom ---
