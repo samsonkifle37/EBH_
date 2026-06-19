@@ -2,11 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { isNative } from "@/lib/native/platform";
 
 export default function ClaimActivateButton({ claimId }: { claimId: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Apple 3.1.1 / Play Billing: activation payment is web-only.
+  if (isNative()) {
+    return (
+      <p className="rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+        Your claim is approved. Activate ownership on the Ethiopian Business Hub website to finish.
+      </p>
+    );
+  }
 
   async function activate() {
     setBusy(true);

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { uploadImage } from "@/lib/uploadClient";
+import { isNative, nativePickPhoto } from "@/lib/native/platform";
 
 /** Single-image uploader (cover / logo / founder photo). Writes the resulting
  * public URL into a hidden input named `name` so the existing form picks it up.
@@ -80,6 +81,29 @@ export default function ImageUploadField({
               <span className="text-xs text-neutral-400">JPG, PNG or WebP · from camera or computer</span>
             </>
           )}
+        </button>
+      )}
+
+      {isNative() && !url && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setError(null);
+            setBusy(true);
+            setProgress(0);
+            try {
+              const file = await nativePickPhoto("camera");
+              if (file) setUrl(await uploadImage(file, { kind, businessId }, { onProgress: setProgress }));
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Upload failed.");
+            } finally {
+              setBusy(false);
+            }
+          }}
+          className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-700 hover:border-emerald-600 hover:text-emerald-700 disabled:opacity-60"
+        >
+          📷 Take a photo
         </button>
       )}
 

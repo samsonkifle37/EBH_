@@ -30,6 +30,21 @@ model User {
   follows       Follow[]
   events        Event[]
   claimRequests ClaimRequest[]
+  deviceTokens  DeviceToken[]
+}
+
+// Push notification device registrations (native apps).
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   @default("") // ios | android
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Business {

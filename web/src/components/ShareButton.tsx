@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { track } from "@/lib/analytics/client";
 import { shareParams } from "@/lib/analytics/attribution";
+import { isNative, nativeShare } from "@/lib/native/platform";
 
 export default function ShareButton({ businessId, title, slug }: { businessId: string; title: string; slug?: string }) {
   const [done, setDone] = useState(false);
@@ -17,7 +18,11 @@ export default function ShareButton({ businessId, title, slug }: { businessId: s
     }).catch(() => {});
 
     try {
-      if (navigator.share) {
+      if (isNative()) {
+        const url = slug ? `${base}?${shareParams(slug, "web_share")}` : base;
+        await nativeShare({ title, url });
+        track("SHARE_COPY_LINK", { businessId, channel: "web_share" });
+      } else if (navigator.share) {
         const url = slug ? `${base}?${shareParams(slug, "web_share")}` : base;
         await navigator.share({ title, url });
         // a completed device share is a real distribution

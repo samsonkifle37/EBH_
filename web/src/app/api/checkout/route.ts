@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { PRODUCTS, isProductKey, stripeConfigured, getStripe, priceId, siteUrl, type ProductKey } from "@/lib/payments/stripe";
 import { devFallbackAllowed } from "@/lib/payments/config";
 import { grantClaimOwnership } from "@/lib/payments/grant";
+import { isNativeRequest } from "@/lib/native/server";
 
 const schema = z.object({
   product: z.string(),
@@ -13,6 +14,11 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Apple 3.1.1 / Play Billing: digital-goods checkout must never run from the
+  // native apps — defense-in-depth even if a purchase CTA somehow rendered.
+  if (await isNativeRequest()) {
+    return NextResponse.json({ error: "Purchases are managed on the website." }, { status: 403 });
+  }
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
@@ -25,7 +31,7 @@ export async function POST(req: Request) {
 
   // ---- resolve + authorise the target ----
   let businessId = parsed.data.businessId ?? "";
-  let claimId = parsed.data.claimId ?? "";
+  const claimId = parsed.data.claimId ?? "";
 
   if (product.key === "CLAIM") {
     if (!claimId) return NextResponse.json({ error: "claimId required" }, { status: 400 });

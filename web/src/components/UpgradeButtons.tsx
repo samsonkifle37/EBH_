@@ -2,11 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { isNative } from "@/lib/native/platform";
 
 export default function UpgradeButtons({ businessId, currentPlan }: { businessId: string; currentPlan: string }) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Apple 3.1.1 / Play Billing: no in-app purchase or external checkout link.
+  if (isNative()) {
+    return (
+      <p className="rounded-lg bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+        {currentPlan === "FREE"
+          ? "Upgrade to Verified or Featured on the Ethiopian Business Hub website."
+          : `Your plan: ${currentPlan}. Manage it on the website.`}
+      </p>
+    );
+  }
 
   async function upgrade(product: "VERIFIED" | "FEATURED") {
     setBusy(true);

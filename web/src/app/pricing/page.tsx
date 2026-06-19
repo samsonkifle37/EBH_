@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { isNativeRequest } from "@/lib/native/server";
 
 export const metadata: Metadata = {
   title: "Pricing — List, Verify and Grow Your Business",
@@ -46,7 +47,12 @@ const PLANS = [
   },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  // Apple 3.1.1 / Google Play Billing: never surface purchase or external
+  // checkout for digital subscriptions inside the native apps.
+  const native = await isNativeRequest();
+  const isPaid = (price: string) => price !== "£0";
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-12">
       <div className="text-center">
@@ -54,6 +60,11 @@ export default function PricingPage() {
         <p className="mx-auto mt-3 max-w-xl text-neutral-500">
           Start free. Upgrade when you want more trust, more visibility and more customers.
         </p>
+        {native && (
+          <p className="mx-auto mt-3 max-w-xl rounded-xl bg-neutral-100 px-4 py-2 text-sm text-neutral-600">
+            Paid plans are managed on the Ethiopian Business Hub website.
+          </p>
+        )}
       </div>
 
       <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
@@ -79,12 +90,18 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <Link
-              href={p.href}
-              className={`mt-6 rounded-xl px-4 py-2.5 text-center text-sm font-semibold ${p.highlight ? "bg-emerald-700 text-white hover:bg-emerald-800" : "border border-neutral-300 text-neutral-700 hover:border-emerald-600 hover:text-emerald-700"}`}
-            >
-              {p.cta}
-            </Link>
+            {native && isPaid(p.price) ? (
+              <p className="mt-6 rounded-xl bg-neutral-100 px-4 py-2.5 text-center text-sm font-medium text-neutral-500">
+                Available on the website
+              </p>
+            ) : (
+              <Link
+                href={p.href}
+                className={`mt-6 rounded-xl px-4 py-2.5 text-center text-sm font-semibold ${p.highlight ? "bg-emerald-700 text-white hover:bg-emerald-800" : "border border-neutral-300 text-neutral-700 hover:border-emerald-600 hover:text-emerald-700"}`}
+              >
+                {p.cta}
+              </Link>
+            )}
           </div>
         ))}
       </div>
