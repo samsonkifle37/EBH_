@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, PlusCircle, Briefcase, User } from "lucide-react";
+import { Home, Search, PlusCircle, Briefcase, User, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -20,13 +20,21 @@ import { cn } from "@/lib/cn";
  *   docs/design-system/mobile-bottom-nav.md
  */
 
-const TABS = [
+type Tab = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  primary?: boolean;
+};
+
+const TABS: Tab[] = [
   { href: "/", label: "Home", icon: Home, exact: true },
   { href: "/search", label: "Search", icon: Search },
   { href: "/list-business", label: "List Business", icon: PlusCircle, primary: true },
   { href: "/for-businesses", label: "For Businesses", icon: Briefcase },
   { href: "/profile", label: "Profile", icon: User },
-] as const;
+];
 
 /** Pathnames where the bottom nav is hidden (non-primary screens) */
 const HIDDEN_PREFIXES = ["/admin", "/auth", "/owner", "/dashboard"];
