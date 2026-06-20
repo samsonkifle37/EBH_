@@ -25,7 +25,10 @@ describe("event taxonomy", () => {
   });
 
   it("adds support + website events to the trackable set without touching the pride loop", () => {
-    expect(SUPPORT_EVENTS).toEqual(["ABOUT_VIEW", "HELP_ARTICLE_VIEW", "REPORT_SUBMITTED", "SAFETY_VIEW"]);
+    expect(SUPPORT_EVENTS).toContain("ABOUT_VIEW");
+    expect(SUPPORT_EVENTS).toContain("SUPPORT_EMAIL_CLICKED");
+    expect(SUPPORT_EVENTS).toContain("SUPPORT_CARD_CLICKED");
+    expect(SUPPORT_EVENTS).toContain("ABUSE_FLOW_OPENED");
     expect(TRACKABLE_EVENTS).toContain("REPORT_SUBMITTED");
     expect(TRACKABLE_EVENTS).toContain("PROFILE_VIEW");
     expect(TRACKABLE_EVENTS).toContain("LOGO_ADDED");

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { NU_URL } from "@/lib/nu";
 import { getFeaturedBusinesses } from "@/lib/queries/businesses";
 import { getUpcomingEvents } from "@/lib/queries/events";
@@ -8,7 +9,6 @@ import SectionHeading from "@/components/SectionHeading";
 import SearchBar from "@/components/ui/SearchBar";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import CityChips from "@/components/CityChips";
 import CategoryChips from "@/components/CategoryChips";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
@@ -54,10 +54,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Section 2 — Browse by City */}
-      <CityChips />
+      {/* Section 2 — Single location entry point (full city filtering lives on /search) */}
+      <section className="mx-auto max-w-6xl px-4 pt-6">
+        <Link
+          href="/search"
+          className="group flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-5 py-4 transition hover:border-emerald-400 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-emerald-900">
+            <span aria-hidden>📍</span> Located in the UK?{" "}
+            <span className="font-bold text-emerald-700 underline-offset-2 group-hover:underline">Browse by location</span>
+          </span>
+          <span aria-hidden className="text-lg text-emerald-600 transition group-hover:translate-x-0.5">→</span>
+        </Link>
+      </section>
 
-      {/* Section 3 — Browse by Category */}
+      {/* Section 3 — Popular categories */}
       <CategoryChips />
 
       {/* Section 4 — Featured Businesses */}

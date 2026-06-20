@@ -26,7 +26,15 @@ export function isPrideEvent(v: unknown): v is PrideEventType {
 
 // Trust/support surface events — not part of the Share Rate loop, but tracked
 // through the same privacy-respecting first-party pipeline.
-export const SUPPORT_EVENTS = ["ABOUT_VIEW", "HELP_ARTICLE_VIEW", "REPORT_SUBMITTED", "SAFETY_VIEW"] as const;
+export const SUPPORT_EVENTS = [
+  "ABOUT_VIEW",
+  "HELP_ARTICLE_VIEW",
+  "REPORT_SUBMITTED",
+  "SAFETY_VIEW",
+  "SUPPORT_EMAIL_CLICKED",
+  "SUPPORT_CARD_CLICKED",
+  "ABUSE_FLOW_OPENED",
+] as const;
 export type SupportEventType = (typeof SUPPORT_EVENTS)[number];
 
 // "Website essentials" events — owner profile-building + website performance.
