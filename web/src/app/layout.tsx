@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import OfflineBanner from "@/components/OfflineBanner";
 import NativeBootstrap from "@/components/NativeBootstrap";
 import NativePushPrompt from "@/components/NativePushPrompt";
@@ -51,9 +52,12 @@ export default function RootLayout({
         <NativeBootstrap />
         <OfflineBanner />
         <Header />
-        <div className="flex-1">{children}</div>
+        {/* pb-20 on mobile ensures content isn't hidden behind the fixed bottom nav */}
+        <div className="flex-1 pb-20 md:pb-0">{children}</div>
         <Footer />
         <NativePushPrompt />
+        {/* Locked mobile bottom navigation — see docs/design-system/mobile-bottom-nav.md */}
+        <MobileBottomNav />
       </body>
     </html>
   );
