@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { NU_URL } from "@/lib/nu";
 import { getFeaturedBusinesses } from "@/lib/queries/businesses";
 import { getUpcomingEvents } from "@/lib/queries/events";
@@ -9,27 +8,11 @@ import SectionHeading from "@/components/SectionHeading";
 import SearchBar from "@/components/ui/SearchBar";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import {
-  CATEGORIES,
-  CATEGORY_ICONS,
-  CATEGORY_LABELS,
-  CITIES,
-  CITY_LABELS,
-} from "@/lib/types";
+import CityChips from "@/components/CityChips";
+import CategoryChips from "@/components/CategoryChips";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
-
-const QUICK_CATEGORIES = [
-  "restaurants",
-  "grocery-stores",
-  "lawyers",
-  "beauty-services",
-  "wedding-services",
-  "travel-agencies",
-  "accountants",
-  "cafes",
-] as const;
 
 const TRUST_POINTS = [
   { icon: "🛡️", title: "Verified against real records", body: "Listings are cross-checked with Companies House, Google and official sources — not user-submitted guesses." },
@@ -48,7 +31,7 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }} />
 
-      {/* Hero — premium charcoal, EBH discovery first */}
+      {/* Section 1 — Hero */}
       <section className="relative overflow-hidden bg-ink text-white">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.18]"
@@ -60,36 +43,24 @@ export default async function HomePage() {
             🇪🇹 The verified home of Ethiopian businesses in the UK
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
-            Discover & support <span className="text-gold-bright">Ethiopian businesses</span> across the UK.
+            Discover trusted <span className="text-gold-bright">Ethiopian businesses</span> across the UK.
           </h1>
           <p className="mt-4 max-w-xl text-base text-neutral-300 sm:text-lg">
-            Trusted restaurants, grocery stores, lawyers, beauty and more — verified against real records, rated by the community, proudly run by your people.
+            Restaurants, grocery stores, travel agencies, lawyers, beauty services, and more.
           </p>
-
           <div className="mt-8 max-w-2xl">
             <SearchBar variant="hero" />
-          </div>
-
-          <div className="mt-6 flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-neutral-400">📍 Browse by city:</span>
-            {CITIES.map((c) => (
-              <Link key={c} href={`/businesses?city=${c}`} className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 font-medium text-neutral-200 transition hover:border-gold-bright/60 hover:text-white">
-                {CITY_LABELS[c]}
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-            {QUICK_CATEGORIES.map((c) => (
-              <Link key={c} href={`/businesses?category=${c}`} className="rounded-full bg-white/10 px-3 py-1.5 font-medium text-neutral-200 transition hover:bg-white/20 hover:text-white">
-                {CATEGORY_ICONS[c]} {CATEGORY_LABELS[c]}
-              </Link>
-            ))}
           </div>
         </div>
       </section>
 
-      {/* Featured businesses */}
+      {/* Section 2 — Browse by City */}
+      <CityChips />
+
+      {/* Section 3 — Browse by Category */}
+      <CategoryChips />
+
+      {/* Section 4 — Featured Businesses */}
       {featured.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-14">
           <SectionHeading title="Featured businesses" subtitle="Trusted and verified partners across the UK" href="/businesses" />
@@ -117,23 +88,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Browse categories */}
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <SectionHeading title="Browse by category" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {CATEGORIES.map((c) => (
-            <Link
-              key={c}
-              href={`/businesses?category=${c}`}
-              className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-ivory-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-600/60 hover:shadow-md"
-            >
-              <span className="text-2xl">{CATEGORY_ICONS[c]}</span>
-              <span className="text-sm font-semibold text-ink">{CATEGORY_LABELS[c]}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       {/* Upcoming events */}
       {events.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-6">
@@ -146,7 +100,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* For business owners — claim + pride */}
+      {/* For business owners */}
       <section className="mx-auto max-w-6xl px-4 py-14">
         <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-gold-soft/50 px-6 py-12 sm:px-12">
           <div className="grid items-center gap-8 lg:grid-cols-[1.3fr_1fr]">
@@ -178,7 +132,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* AI concierge teaser */}
+      {/* AI Concierge teaser */}
       <section className="mx-auto max-w-6xl px-4 pb-4">
         <div className="overflow-hidden rounded-3xl bg-ink px-6 py-10 text-white sm:px-10">
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
@@ -199,7 +153,7 @@ export default async function HomePage() {
         <AdSlot placement="HOME_HERO" />
       </section>
 
-      {/* NU band — preserved as a supporting strip (not the hero) */}
+      {/* NU band */}
       <section className="mx-auto max-w-6xl px-4 pb-14">
         <div className="flex flex-col items-start justify-between gap-4 rounded-3xl border border-neutral-200/80 bg-ivory-card px-6 py-8 sm:flex-row sm:items-center sm:px-10">
           <div>

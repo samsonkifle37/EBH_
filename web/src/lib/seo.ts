@@ -3,7 +3,7 @@
 
 export const SITE_URL = (process.env.SITE_URL ?? "https://ethiopianbh.vercel.app").replace(/\/$/, "");
 export const SITE_NAME = "Ethiopian Business Hub UK";
-export const SUPPORT_EMAIL = "support@ethiopianbh.uk";
+export const SUPPORT_EMAIL = "admin@nu-discoverethiopia.com";
 
 export function absoluteUrl(path = "/"): string {
   return path.startsWith("http") ? path : `${SITE_URL}${path.startsWith("/") ? "" : "/"}${path}`;

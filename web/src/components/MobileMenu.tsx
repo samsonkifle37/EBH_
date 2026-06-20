@@ -9,11 +9,12 @@ export interface MobileNavLink {
   label: string;
 }
 
-/**
- * Hamburger + slide-down sheet for small screens. Server passes the resolved
- * nav (role-aware) so no session logic lives on the client.
- */
-export default function MobileMenu({ links, signedIn, accountHref }: { links: MobileNavLink[]; signedIn: boolean; accountHref?: string }) {
+export interface NavSection {
+  heading?: string;
+  links: MobileNavLink[];
+}
+
+export default function MobileMenu({ sections }: { sections: NavSection[] }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -42,25 +43,32 @@ export default function MobileMenu({ links, signedIn, accountHref }: { links: Mo
       {open && (
         <>
           <div className="fixed inset-0 top-16 z-40 bg-ink/30" onClick={() => setOpen(false)} aria-hidden />
-          <div className="fixed inset-x-0 top-16 z-50 border-b border-neutral-200 bg-ivory-card p-4 shadow-xl">
-            <SearchBar variant="compact" className="mb-3" />
-            <nav className="flex flex-col">
-              {links.map((l) => (
-                <Link
-                  key={l.href + l.label}
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg px-3 py-3 text-sm font-semibold text-neutral-700 hover:bg-neutral-100"
-                >
-                  {l.label}
-                </Link>
-              ))}
-              {signedIn && accountHref && (
-                <Link href={accountHref} onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 text-sm font-semibold text-neutral-700 hover:bg-neutral-100">
-                  My account
-                </Link>
-              )}
-            </nav>
+          <div className="fixed inset-x-0 top-16 z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-neutral-200 bg-ivory-card shadow-xl">
+            <div className="p-4">
+              <SearchBar variant="compact" className="mb-4" />
+              <nav className="flex flex-col">
+                {sections.map((section, i) => (
+                  <div key={i}>
+                    {i > 0 && <div className="my-2 border-t border-neutral-100" />}
+                    {section.heading && (
+                      <p className="mb-1 px-3 pt-1 text-xs font-bold uppercase tracking-wider text-neutral-400">
+                        {section.heading}
+                      </p>
+                    )}
+                    {section.links.map((l) => (
+                      <Link
+                        key={l.href + l.label}
+                        href={l.href}
+                        onClick={() => setOpen(false)}
+                        className="block rounded-lg px-3 py-3 text-sm font-semibold text-neutral-700 hover:bg-neutral-100"
+                      >
+                        {l.label}
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+              </nav>
+            </div>
           </div>
         </>
       )}

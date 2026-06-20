@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SUPPORT_EMAIL } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -7,7 +8,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const SUPPORT_EMAIL = "support@ethiopianbh.uk";
 const UPDATED = "16 June 2026";
 
 function H({ children }: { children: React.ReactNode }) {

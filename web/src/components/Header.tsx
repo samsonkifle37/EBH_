@@ -3,10 +3,10 @@ import { getSession, hasRole } from "@/lib/session";
 import { NU_URL } from "@/lib/nu";
 import SignOutButton from "@/components/SignOutButton";
 import SearchBar from "@/components/ui/SearchBar";
-import MobileMenu, { type MobileNavLink } from "@/components/MobileMenu";
+import MobileMenu, { type NavSection, type MobileNavLink } from "@/components/MobileMenu";
 import Logo from "@/components/Logo";
 
-const NAV: MobileNavLink[] = [
+const DESKTOP_NAV: MobileNavLink[] = [
   { href: "/businesses", label: "Businesses" },
   { href: "/events", label: "Events" },
   { href: "/concierge", label: "AI Concierge" },
@@ -16,20 +16,46 @@ const NAV: MobileNavLink[] = [
 export default async function Header() {
   const session = await getSession();
 
-  const mobileLinks: MobileNavLink[] = [...NAV];
+  // Core links: app navigation + role-based utilities
+  const coreLinks: MobileNavLink[] = [
+    { href: "/businesses", label: "Businesses" },
+    { href: "/events", label: "Events" },
+    { href: "/concierge", label: "AI Concierge" },
+  ];
+
   if (session) {
-    if (hasRole(session, "ADMIN")) mobileLinks.push({ href: "/admin", label: "Admin" });
-    if (hasRole(session, "EVENT_ORGANIZER")) mobileLinks.push({ href: "/dashboard/events", label: "My Events" });
-    if (hasRole(session, "BUSINESS_OWNER")) mobileLinks.push({ href: "/owner", label: "My Businesses" });
+    if (hasRole(session, "ADMIN")) coreLinks.push({ href: "/admin", label: "Admin" });
+    if (hasRole(session, "EVENT_ORGANIZER")) coreLinks.push({ href: "/dashboard/events", label: "My Events" });
+    if (hasRole(session, "BUSINESS_OWNER")) coreLinks.push({ href: "/owner", label: "My Businesses" });
+    coreLinks.push({ href: "/account", label: "My account" });
   } else {
-    mobileLinks.push({ href: "/pricing", label: "List your business" });
-    mobileLinks.push({ href: "/auth/signin", label: "Sign in" });
+    coreLinks.push({ href: "/auth/signin", label: "Sign in" });
   }
-  // trust & support — discoverable from mobile navigation
-  mobileLinks.push({ href: "/about", label: "About" });
-  mobileLinks.push({ href: "/help", label: "Help centre" });
-  mobileLinks.push({ href: "/safety", label: "Safety" });
-  mobileLinks.push({ href: "/contact", label: "Contact" });
+
+  const mobileSections: NavSection[] = [
+    { links: coreLinks },
+    {
+      heading: "For Businesses",
+      links: [
+        { href: "/pricing", label: "List your business" },
+        { href: "/pricing", label: "Get verified" },
+        { href: "/advertise", label: "Advertise with us" },
+        { href: "/dashboard/events", label: "Promote an event" },
+      ],
+    },
+    {
+      heading: "Support & Trust",
+      links: [
+        { href: "/about", label: "About EBH" },
+        { href: "/help", label: "Help centre" },
+        { href: "/contact", label: "Contact us" },
+        { href: "/safety", label: "Safety & moderation" },
+        { href: "/report", label: "Report a problem" },
+        { href: "/privacy", label: "Privacy policy" },
+        { href: "/terms", label: "Terms" },
+      ],
+    },
+  ];
 
   return (
     <header data-ebh-chrome className="sticky top-0 z-40 border-b border-neutral-200/80 bg-ivory/85 backdrop-blur supports-[backdrop-filter]:bg-ivory/70">
@@ -46,7 +72,7 @@ export default async function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-5 text-sm font-medium text-neutral-600 lg:flex">
-          {NAV.map((l) => (
+          {DESKTOP_NAV.map((l) => (
             <Link key={l.href} href={l.href} className="hover:text-ink">{l.label}</Link>
           ))}
         </nav>
@@ -87,11 +113,7 @@ export default async function Header() {
             </div>
           )}
 
-          {session ? (
-            <MobileMenu links={mobileLinks} signedIn accountHref="/account" />
-          ) : (
-            <MobileMenu links={mobileLinks} signedIn={false} />
-          )}
+          <MobileMenu sections={mobileSections} />
         </div>
       </div>
     </header>

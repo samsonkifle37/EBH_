@@ -57,8 +57,12 @@ export const ADMIN_EVENTS = [
 ] as const;
 export type AdminEventType = (typeof ADMIN_EVENTS)[number];
 
+// Homepage discovery chip navigation events.
+export const DISCOVERY_EVENTS = ["CITY_CHIP_CLICKED", "CATEGORY_CHIP_CLICKED"] as const;
+export type DiscoveryEventType = (typeof DISCOVERY_EVENTS)[number];
+
 /** Every event the /api/analytics/track endpoint will accept. */
-export const TRACKABLE_EVENTS = [...PRIDE_EVENTS, ...SUPPORT_EVENTS, ...WEBSITE_EVENTS, ...ADMIN_EVENTS] as const;
+export const TRACKABLE_EVENTS = [...PRIDE_EVENTS, ...SUPPORT_EVENTS, ...WEBSITE_EVENTS, ...ADMIN_EVENTS, ...DISCOVERY_EVENTS] as const;
 export type TrackableEvent = (typeof TRACKABLE_EVENTS)[number];
 
 // Every event in the share family.

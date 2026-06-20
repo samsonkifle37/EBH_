@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SUPPORT_EMAIL } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
   description: "The terms governing your use of Ethiopian Business Hub UK.",
   alternates: { canonical: "/terms" },
 };
-
-const SUPPORT_EMAIL = "support@ethiopianbh.uk";
 const UPDATED = "16 June 2026";
 
 function H({ children }: { children: React.ReactNode }) {
