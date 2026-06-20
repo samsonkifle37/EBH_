@@ -29,8 +29,8 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* For businesses */}
-        <div>
+        {/* For businesses — hidden on mobile (accessible via bottom nav → For Businesses tab) */}
+        <div className="hidden md:block">
           <p className="text-sm font-semibold text-neutral-900">For businesses</p>
           <ul className="mt-3 space-y-2 text-sm text-neutral-500">
             <li><Link href="/pricing" className="hover:text-emerald-700">List your business</Link></li>
@@ -40,8 +40,8 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Support & trust */}
-        <div>
+        {/* Support & trust — hidden on mobile (accessible via bottom nav → Profile tab) */}
+        <div className="hidden md:block">
           <p className="text-sm font-semibold text-neutral-900">Support &amp; trust</p>
           <ul className="mt-3 space-y-2 text-sm text-neutral-500">
             <li><Link href="/about" className="hover:text-emerald-700">About EBH</Link></li>
