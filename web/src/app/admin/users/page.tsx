@@ -15,6 +15,9 @@ export default async function AdminUsersPage() {
   await requireAdminPage();
 
   const users = await db.user.findMany({
+    // Hide any legacy anonymized tombstones (deleted+<id>@ebh.invalid) left by the
+    // old admin-delete behaviour; admin delete is now a true hard-delete.
+    where: { NOT: { email: { endsWith: "@ebh.invalid" } } },
     orderBy: { createdAt: "desc" },
     take: 500,
     select: { id: true, name: true, email: true, roles: true, createdAt: true, _count: { select: { businesses: true, reviews: true } } },

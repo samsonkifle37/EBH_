@@ -7,6 +7,7 @@ import { getSession } from "@/lib/session";
 import { requireAdminApi } from "@/lib/adminGuard";
 import { parseRoles } from "@/lib/auth";
 import { normalizeRoles, roleChangeBlocked, deleteBlocked, suspendBlocked } from "@/lib/userAdmin";
+import { deleteUserAccount } from "@/lib/account";
 import { logAdminAction } from "@/lib/adminAudit";
 import { recordPrideEvent } from "@/lib/analytics/record";
 import type { TrackableEvent } from "@/lib/analytics/events";
@@ -92,7 +93,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   return NextResponse.json({ ok: true, tempPassword });
 }
 
-/** Anonymize (not hard-delete): scrub PII, keep business ownership integrity. */
+/**
+ * Hard-delete the user (GDPR erasure), reusing the same path as self-serve
+ * account deletion: un-claims their businesses (listings are retained as
+ * unclaimed directory records), removes authored events, anonymises analytics,
+ * and cascades reviews/favourites/follows/claims/device tokens. The row is gone
+ * — no "Deleted user" tombstone is left behind. The audit log records the
+ * deletion (its actor/target are plain string ids, independent of the User row).
+ */
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const denied = await requireAdminApi();
   if (denied) return denied;
@@ -107,18 +115,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const guard = deleteBlocked({ isSelf: session.userId === id, targetActiveAdmin, otherActiveAdmins: await otherActiveAdmins(id) });
   if (guard.blocked) return NextResponse.json({ error: guard.reason }, { status: 409 });
 
-  await db.user.update({
-    where: { id },
-    data: {
-      name: "Deleted user",
-      email: `deleted+${id}@ebh.invalid`,
-      passwordHash: await bcrypt.hash(randomBytes(16).toString("hex"), 10),
-      roles: "USER",
-      status: "deactivated",
-      suspendedReason: "account anonymized by admin",
-      tokenVersion: { increment: 1 },
-    },
-  });
-  await audit(session.userId, session.name, id, "USER_DELETED", { anonymized: true }, "USER_DELETED");
+  await deleteUserAccount(id);
+  await audit(session.userId, session.name, id, "USER_DELETED", { email: target.email }, "USER_DELETED");
   return NextResponse.json({ ok: true });
 }
