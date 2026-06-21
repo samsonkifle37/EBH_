@@ -3,10 +3,20 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { slugify } from "@/lib/domain/slug";
 import { businessInputSchema, HOUR_PRESETS } from "@/lib/validation";
+import { rateLimitDb, HOUR } from "@/lib/rateLimitDb";
 
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Sign in to list a business" }, { status: 401 });
+
+  // Rate limit: max 5 business submissions per user per hour
+  const allowed = await rateLimitDb(`business_submit:user:${session.userId}`, 5, HOUR);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "You've submitted several listings recently. Please wait before submitting more." },
+      { status: 429 },
+    );
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = businessInputSchema.safeParse(body);

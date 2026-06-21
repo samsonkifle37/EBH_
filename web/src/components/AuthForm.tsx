@@ -52,12 +52,12 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
         {mode === "signup" && (
           <div>
             <label htmlFor="name" className="mb-1 block text-sm font-medium">Full name</label>
-            <input id="name" name="name" required minLength={2} className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-600" placeholder="Selam Bekele" />
+            <input id="name" name="name" required minLength={2} className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-600" placeholder="Samson Gezahegn" />
           </div>
         )}
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-medium">Email</label>
-          <input id="email" name="email" type="email" required className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-600" placeholder="you@example.com" />
+          <input id="email" name="email" type="email" required className="w-full rounded-xl border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-600" placeholder="you@nudicoverEthiopia.com" />
         </div>
         <div>
           <label htmlFor="password" className="mb-1 block text-sm font-medium">Password</label>

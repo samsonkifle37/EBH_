@@ -4,10 +4,20 @@ import { getSession } from "@/lib/session";
 import { addRole } from "@/lib/auth";
 import { slugify } from "@/lib/domain/slug";
 import { eventInputSchema } from "@/lib/validation";
+import { rateLimitDb, HOUR } from "@/lib/rateLimitDb";
 
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Sign in to create an event" }, { status: 401 });
+
+  // Rate limit: max 10 event submissions per user per hour
+  const allowed = await rateLimitDb(`event_submit:user:${session.userId}`, 10, HOUR);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "You've submitted several events recently. Please wait before submitting more." },
+      { status: 429 },
+    );
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = eventInputSchema.safeParse(body);

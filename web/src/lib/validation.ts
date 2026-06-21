@@ -27,14 +27,14 @@ export const businessInputSchema = z.object({
   brandStory: z.string().max(2000).optional().default(""),
   yearFounded: z.coerce.number().int().min(1800).max(2100).optional().nullable(),
   signatureItems: z
-    .array(z.object({ title: z.string().max(120).default(""), description: z.string().max(400).default(""), imageUrl: z.string().max(400).default("") }))
+    .array(z.object({ title: z.string().max(120).default(""), description: z.string().max(400).default(""), imageUrl: z.string().url().max(400).or(z.literal("")).default("") }))
     .max(6)
     .optional()
     .default([]),
   // --- website essentials ---
   whatsapp: z.string().max(30).optional().default(""),
   services: z
-    .array(z.object({ name: z.string().max(120).default(""), description: z.string().max(400).default(""), priceRange: z.string().max(60).default(""), imageUrl: z.string().max(400).default("") }))
+    .array(z.object({ name: z.string().max(120).default(""), description: z.string().max(400).default(""), priceRange: z.string().max(60).default(""), imageUrl: z.string().url().max(400).or(z.literal("")).default("") }))
     .max(12)
     .optional()
     .default([]),
