@@ -36,6 +36,7 @@ export const metadata: Metadata = {
     title: "Ethiopian Business Hub UK",
     description: "Discover and support verified Ethiopian-owned businesses across the UK.",
   },
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
