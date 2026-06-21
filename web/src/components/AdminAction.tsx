@@ -8,6 +8,7 @@ interface Props {
   body: Record<string, unknown>;
   label: string;
   variant?: "primary" | "danger" | "neutral";
+  confirm?: string; // if set, shows a window.confirm dialog before proceeding
 }
 
 const STYLES = {
@@ -16,7 +17,7 @@ const STYLES = {
   neutral: "border border-neutral-300 text-neutral-600 hover:border-emerald-600 hover:text-emerald-700",
 };
 
-export default function AdminAction({ url, body, label, variant = "neutral" }: Props) {
+export default function AdminAction({ url, body, label, variant = "neutral", confirm: confirmMsg }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -24,6 +25,7 @@ export default function AdminAction({ url, body, label, variant = "neutral" }: P
     <button
       disabled={busy}
       onClick={async () => {
+        if (confirmMsg && !window.confirm(confirmMsg)) return;
         setBusy(true);
         await fetch(url, {
           method: "POST",

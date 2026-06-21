@@ -6,7 +6,7 @@ import { addRole } from "@/lib/auth";
 import { CATEGORIES, CITIES } from "@/lib/types";
 
 const schema = z.object({
-  action: z.enum(["approve", "reject", "feature", "unfeature", "setLevel", "setCategory", "setCity", "merge"]),
+  action: z.enum(["approve", "reject", "delete", "feature", "unfeature", "setLevel", "setCategory", "setCity", "merge"]),
   level: z.number().int().min(0).max(4).optional(),
   category: z.enum(CATEGORIES).optional(),
   city: z.enum(CITIES).optional(),
@@ -77,6 +77,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const ok = await mergeBusiness(id, a.intoId);
     if (!ok) return NextResponse.json({ error: "Merge failed: business not found or same id" }, { status: 400 });
     return NextResponse.json({ ok: true });
+  }
+
+  // Hard-delete: remove a business and all its dependent records permanently.
+  if (a.action === "delete") {
+    await db.$transaction(async (tx) => {
+      await tx.businessPhoto.deleteMany({ where: { businessId: id } });
+      await tx.review.deleteMany({ where: { businessId: id } });
+      await tx.favorite.deleteMany({ where: { businessId: id } });
+      await tx.follow.deleteMany({ where: { businessId: id } });
+      await tx.analyticsEvent.deleteMany({ where: { businessId: id } });
+      await tx.claimRequest.deleteMany({ where: { businessId: id } });
+      await tx.businessSource.deleteMany({ where: { businessId: id } });
+      await tx.prideEvent.deleteMany({ where: { businessId: id } });
+      await tx.business.delete({ where: { id } });
+    });
+    return NextResponse.json({ ok: true, deleted: true });
   }
 
   // Approving an owner-submitted listing grants ownership + the BUSINESS_OWNER

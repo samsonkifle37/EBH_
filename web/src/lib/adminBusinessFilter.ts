@@ -3,6 +3,7 @@
 // consistent and unit-testable.
 
 export type AdminFilter =
+  | "approved"
   | "all"
   | "ready_to_approve"
   | "needs_contact"
@@ -11,7 +12,8 @@ export type AdminFilter =
   | "auto_approved";
 
 export const ADMIN_FILTERS: { key: AdminFilter; label: string }[] = [
-  { key: "all", label: "All pending" },
+  { key: "approved", label: "Approved" },
+  { key: "all", label: "Pending" },
   { key: "ready_to_approve", label: "Ready to approve" },
   { key: "needs_contact", label: "Needs contact" },
   { key: "needs_image", label: "Needs image" },
@@ -25,6 +27,7 @@ export function isAdminFilter(v: unknown): v is AdminFilter {
 
 export interface BizFlags {
   isPending: boolean;
+  isApproved: boolean;
   hasImage: boolean;
   hasContact: boolean;
   isDuplicate: boolean;
@@ -44,6 +47,8 @@ export function isNeedsContact(f: BizFlags): boolean {
 /** Whether a row belongs in a given chip's queue. */
 export function matchesChip(filter: AdminFilter, f: BizFlags): boolean {
   switch (filter) {
+    case "approved":
+      return f.isApproved;
     case "ready_to_approve":
       return f.isPending && f.hasImage && f.hasContact && !f.isDuplicate;
     case "needs_contact":

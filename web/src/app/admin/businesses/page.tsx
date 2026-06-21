@@ -41,7 +41,7 @@ function sevenDaysAgoMs(now: number = Date.now()): number {
 export default async function AdminBusinessesPage({ searchParams }: { searchParams: Promise<{ filter?: string; q?: string }> }) {
   await requireAdminPage();
   const sp = await searchParams;
-  const filter: AdminFilter = isAdminFilter(sp.filter) ? sp.filter : "all";
+  const filter: AdminFilter = isAdminFilter(sp.filter) ? sp.filter : "approved";
   const q = (sp.q ?? "").trim();
 
   const businesses = await db.business.findMany({
@@ -65,6 +65,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
   const sevenDaysAgo = sevenDaysAgoMs();
   const flagsOf = (b: Row): BizFlags => ({
     isPending: b.status === "PENDING",
+    isApproved: b.status === "APPROVED",
     hasImage: b._count.photos > 0 || !!b.coverImageUrl || !!b.logoUrl,
     hasContact: !!(b.phone || b.website || b.email),
     isDuplicate: (nameCounts.get(normalizeName(b.name)) ?? 0) > 1,
@@ -136,6 +137,13 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
             {b.featured
               ? <AdminAction url={`/api/admin/businesses/${b.id}`} body={{ action: "unfeature" }} label="Unfeature" />
               : <AdminAction url={`/api/admin/businesses/${b.id}`} body={{ action: "feature" }} label="Feature" />}
+            <AdminAction
+              url={`/api/admin/businesses/${b.id}`}
+              body={{ action: "delete" }}
+              label="Delete"
+              variant="danger"
+              confirm={`Permanently delete "${b.name}"? This cannot be undone — all reviews, photos and analytics for this listing will be removed.`}
+            />
           </div>
         </div>
         <AdminBusinessTools
@@ -176,7 +184,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
       <p className="mt-5 text-sm text-neutral-500">
         Showing {shown.length}{filtered.length > shown.length ? ` of ${filtered.length}` : ""} listings
         {q ? ` matching “${q}”` : ""}.
-        {filter === "all" && !q && " The Needs image queue is hidden here — see the chip above."}
+        {filter === "all" && !q && " Needs-image listings are hidden here — see the chip above."}
       </p>
 
       {shown.length === 0 ? (
