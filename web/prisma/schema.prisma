@@ -109,6 +109,10 @@ model Business {
   approvalReason     String @default("")
   reviewBucket       String @default("") // "" | needs_enrichment
 
+  // --- Cultural Moment Engine ---
+  enkutatashPartner Boolean @default(false) // Enkutatash 2026 partner flag
+  enkutatashOffer   String  @default("")    // short offer / menu text shown on /enkutatash
+
   owner           User?            @relation(fields: [ownerId], references: [id])
   photos          BusinessPhoto[]
   reviews         Review[]

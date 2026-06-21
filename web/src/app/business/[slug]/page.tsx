@@ -15,6 +15,7 @@ import { allowDemoData } from "@/lib/flags";
 import Gallery from "@/components/Gallery";
 import RatingStars from "@/components/RatingStars";
 import { VerifiedBadge, FeaturedBadge, OpenNowBadge } from "@/components/Badges";
+import EnkutatashBadge from "@/components/EnkutatashBadge";
 import OpeningHoursTable from "@/components/OpeningHoursTable";
 import MapEmbed from "@/components/MapEmbed";
 import ReviewList from "@/components/ReviewList";
@@ -286,6 +287,9 @@ export default async function BusinessPage({ params, searchParams }: Props) {
                 {business.featured && <FeaturedBadge />}
                 <VerifiedBadge score={score} level={business.verificationLevel} />
                 <OpenNowBadge open={openNow} />
+                {business.enkutatashPartner && (
+                  <EnkutatashBadge offer={business.enkutatashOffer || undefined} />
+                )}
               </div>
               <h1 className="mt-2 text-3xl font-bold tracking-tight">{business.name}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-neutral-500">

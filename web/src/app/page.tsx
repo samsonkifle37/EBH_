@@ -68,7 +68,41 @@ export default async function HomePage() {
         </Link>
       </section>
 
-      {/* Section 3 — Popular categories */}
+      {/* Section 3 — Enkutatash Cultural Moment banner */}
+      {(() => {
+        const msLeft = new Date("2026-09-11T00:00:00+03:00").getTime() - Date.now();
+        const daysLeft = Math.max(0, Math.floor(msLeft / 86_400_000));
+        if (daysLeft <= 0 || daysLeft > 180) return null; // only show within 6 months
+        return (
+          <section className="mx-auto max-w-6xl px-4 pt-4">
+            <a
+              href="/enkutatash"
+              className="group flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-[#0f3d28] to-[#15613e] px-5 py-4 text-white transition hover:brightness-110"
+            >
+              <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                <span className="text-base">🌸</span>
+                <span className="font-bold text-[#e0a82e]">Enkutatash 2026</span>
+                <span className="text-emerald-200">·</span>
+                <span className="text-emerald-100">
+                  Ethiopian New Year in{" "}
+                  <span className="font-bold text-white">{daysLeft} days</span>
+                </span>
+                <span className="hidden text-emerald-300 sm:inline">
+                  · Discover Enkutatash Partners
+                </span>
+              </span>
+              <span
+                aria-hidden
+                className="shrink-0 text-[#e0a82e] transition-transform group-hover:translate-x-0.5"
+              >
+                →
+              </span>
+            </a>
+          </section>
+        );
+      })()}
+
+      {/* Section 4 — Popular categories */}
       <CategoryChips />
 
       {/* Section 4 — Featured Businesses */}

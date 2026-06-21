@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireAdminPage } from "@/lib/adminGuard";
 import { trustV2ForBusiness } from "@/lib/trust";
@@ -80,6 +80,60 @@ export default async function AdminBusinessTrustPage({ params }: { params: Promi
             ))}
           </ul>
         )}
+      </section>
+
+      {/* ── Cultural Moment Engine ─────────────────────────── */}
+      <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-6">
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-amber-700">
+          🌸 Enkutatash 2026
+        </h2>
+        <form
+          action={async (formData: FormData) => {
+            "use server";
+            await requireAdminPage();
+            const partner = formData.get("partner") === "true";
+            const offer = (formData.get("offer") as string | null) ?? "";
+            await db.business.update({
+              where: { id },
+              data: { enkutatashPartner: partner, enkutatashOffer: offer.slice(0, 280) },
+            });
+            redirect(`/admin/business/${id}`);
+          }}
+        >
+          <label className="flex items-center gap-3 text-sm font-medium text-neutral-800">
+            <input
+              type="checkbox"
+              name="partner"
+              value="true"
+              defaultChecked={business.enkutatashPartner}
+              className="h-4 w-4 accent-amber-600"
+            />
+            Enkutatash Partner 2026
+          </label>
+          <p className="mt-1 text-xs text-neutral-500">
+            Check to show the 🌸 badge on the listing and include on{" "}
+            <a href="/enkutatash" target="_blank" className="text-amber-700 underline">/enkutatash</a>.
+          </p>
+          <div className="mt-4">
+            <label className="block text-xs font-semibold text-neutral-700">
+              Special offer (optional, ≤280 chars)
+            </label>
+            <textarea
+              name="offer"
+              defaultValue={business.enkutatashOffer ?? ""}
+              maxLength={280}
+              rows={2}
+              placeholder="e.g. Free dessert with any main course on Ethiopian New Year"
+              className="mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </div>
+          <button
+            type="submit"
+            className="mt-3 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white hover:bg-amber-600 transition-colors"
+          >
+            Save Enkutatash settings
+          </button>
+        </form>
       </section>
 
       <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6">
