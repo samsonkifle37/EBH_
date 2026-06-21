@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { del } from "@vercel/blob";
 import { db } from "@/lib/db";
 import { requireAdminPage } from "@/lib/adminGuard";
 
@@ -60,7 +61,10 @@ export default async function EnkutatashPhotosAdminPage() {
                     <form action={async () => {
                       "use server";
                       await requireAdminPage();
+                      const rec = await db.enkutatashPhoto.findUnique({ where: { id: photo.id }, select: { imageUrl: true } });
                       await db.enkutatashPhoto.update({ where: { id: photo.id }, data: { status: "REJECTED" } });
+                      // Delete from Vercel Blob so rejected content doesn't linger
+                      if (rec?.imageUrl) await del(rec.imageUrl).catch(() => {});
                       redirect("/admin/enkutatash-photos");
                     }}>
                       <button type="submit" className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100">

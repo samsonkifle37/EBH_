@@ -10,9 +10,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!session) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const { id } = await params;
 
-  const review = await db.review.findUnique({ where: { id }, include: { business: { select: { ownerId: true } } } });
+  const review = await db.review.findUnique({
+    where: { id },
+    include: { business: { select: { ownerId: true, submittedById: true } } },
+  });
   if (!review) return NextResponse.json({ error: "Review not found" }, { status: 404 });
-  if (review.business.ownerId !== session.userId) {
+
+  const isAdmin = session.roles.includes("ADMIN");
+  const isOwner =
+    review.business.ownerId === session.userId ||
+    review.business.submittedById === session.userId;
+  if (!isAdmin && !isOwner) {
     return NextResponse.json({ error: "Only the business owner can respond" }, { status: 403 });
   }
 

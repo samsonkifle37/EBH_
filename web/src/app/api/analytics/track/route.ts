@@ -4,6 +4,7 @@ import { z } from "zod";
 import { recordPrideEvent } from "@/lib/analytics/record";
 import { TRACKABLE_EVENTS, isShareChannel } from "@/lib/analytics/events";
 import { VISITOR_COOKIE, ATTRIBUTION_COOKIE, parseAttribution } from "@/lib/analytics/attribution";
+import { rateLimitDb, clientIp, HOUR } from "@/lib/rateLimitDb";
 
 export const runtime = "nodejs"; // Prisma
 
@@ -19,6 +20,11 @@ const schema = z.object({
 const ATTRIBUTABLE = new Set(["PROFILE_VIEW", "CONTACT_CLICK", "WEBSITE_CLICK", "DIRECTIONS_CLICK"]);
 
 export async function POST(req: Request) {
+  // Rate limit: 200 events/hr per IP — prevents analytics flooding; silently drops excess
+  const ip = clientIp(req);
+  const allowed = await rateLimitDb(`analytics_track:ip:${ip}`, 200, HOUR);
+  if (!allowed) return NextResponse.json({ ok: true, recorded: false }); // silent drop
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });

@@ -5,6 +5,8 @@
  * a waitlist landing page) without code changes.
  */
 export const NU_URL = process.env.NEXT_PUBLIC_NU_URL ?? "https://nu-discoverethiopia.com/";
-export const NU_APP_STORE_URL = process.env.NEXT_PUBLIC_NU_APP_STORE_URL ?? NU_URL;
+export const NU_APP_STORE_URL =
+  process.env.NEXT_PUBLIC_NU_APP_STORE_URL ??
+  "https://apps.apple.com/gb/app/nu-ethiopia/id6767019413";
 // Google Play is "coming soon" pre-launch.
 export const NU_PLAY_STORE_URL = process.env.NEXT_PUBLIC_NU_PLAY_STORE_URL ?? "";
