@@ -3,6 +3,13 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import BusinessLogo from "@/components/BusinessLogo";
 import EnkutatashCountdown from "@/components/EnkutatashCountdown";
+import FlowerCard from "@/components/enkutatash/FlowerCard";
+import CalendarCard from "@/components/enkutatash/CalendarCard";
+import QuizCard from "@/components/enkutatash/QuizCard";
+import TraditionCard from "@/components/enkutatash/TraditionCard";
+import NearMeCard from "@/components/enkutatash/NearMeCard";
+import GreetingCard from "@/components/enkutatash/GreetingCard";
+import ProgressTracker from "@/components/enkutatash/ProgressTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -39,39 +46,6 @@ const WHATSAPP_SHARE =
     "🌸 Enkutatash 2026 is coming!\n\nCelebrate the Ethiopian New Year with the best Ethiopian businesses across the UK.\n\n👉 https://ethiopianbh.co.uk/enkutatash"
   );
 
-const CULTURAL_FACTS = [
-  {
-    emoji: "🌸",
-    title: "Flowers everywhere",
-    body: "Children greet neighbours with bouquets of yellow Adey Abeba (African daisies), the symbol of Enkutatash — meaning 'gift of jewels.'",
-  },
-  {
-    emoji: "📅",
-    title: "1 Meskerem",
-    body: "Enkutatash falls on the 1st of Meskerem in the Ethiopian calendar — 11 September in the Gregorian calendar. Ethiopia has 13 months and a calendar 7–8 years behind the world.",
-  },
-  {
-    emoji: "🎶",
-    title: "Songs & feasts",
-    body: "Children sing traditional songs (nimsas) door to door. Families slaughter a sheep, cook injera and wot, and share food with neighbours.",
-  },
-  {
-    emoji: "⛪",
-    title: "Timkat & church",
-    body: "Ethiopian Orthodox Christians attend an overnight church service starting New Year's Eve, dressed in traditional white habesha kemis.",
-  },
-  {
-    emoji: "🇬🇧",
-    title: "Enkutatash in the UK",
-    body: "Tens of thousands of Ethiopian diaspora across London, Manchester, Birmingham and beyond celebrate together — from restaurant pop-ups to community events.",
-  },
-  {
-    emoji: "🎊",
-    title: "Melkam Addis Amet!",
-    body: "The traditional New Year greeting: መልካም አዲስ ዓመት — 'Happy New Year!' in Amharic.",
-  },
-];
-
 async function getEnkutatashPartners() {
   return db.business.findMany({
     where: { enkutatashPartner: true, status: "APPROVED" },
@@ -81,6 +55,36 @@ async function getEnkutatashPartners() {
     orderBy: [{ featured: "desc" }, { name: "asc" }],
     take: 12,
   });
+}
+
+async function getNearMeData() {
+  const [businesses, events] = await Promise.all([
+    db.business.findMany({
+      where: { enkutatashPartner: true, status: "APPROVED" },
+      select: { id: true, name: true, category: true, city: true, enkutatashOffer: true, slug: true,
+        photos: { take: 1, select: { url: true } } },
+      orderBy: { name: "asc" },
+      take: 20,
+    }),
+    db.event.findMany({
+      where: { startsAt: { gte: new Date() }, status: "APPROVED" },
+      select: { id: true, title: true, city: true, startsAt: true, venueName: true, slug: true },
+      orderBy: { startsAt: "asc" },
+      take: 8,
+    }).catch(() => [] as any[]),
+  ]);
+  return {
+    businesses: businesses.map((b) => ({ ...b, imageUrl: b.photos[0]?.url ?? null })),
+    // Normalise to the shape NearMeCard expects
+    events: (events as any[]).map((e) => ({
+      id: e.id,
+      title: e.title,
+      city: e.city,
+      startDate: e.startsAt instanceof Date ? e.startsAt.toISOString() : String(e.startsAt),
+      venue: e.venueName || null,
+      slug: e.slug || null,
+    })),
+  };
 }
 
 async function getApprovedPhotos() {
@@ -103,8 +107,11 @@ async function getFeaturedFallback() {
 }
 
 export default async function EnkutatashPage() {
-  const partners = await getEnkutatashPartners();
-  const communityPhotos = await getApprovedPhotos();
+  const [partners, communityPhotos, nearMe] = await Promise.all([
+    getEnkutatashPartners(),
+    getApprovedPhotos(),
+    getNearMeData(),
+  ]);
   // Fall back to featured businesses if no Enkutatash partners registered yet
   const fallbackBusinesses =
     partners.length === 0 ? await getFeaturedFallback() : [];
@@ -177,32 +184,93 @@ export default async function EnkutatashPage() {
         </div>
       </section>
 
-      {/* ── What is Enkutatash ──────────────────────────────────────────────── */}
+      {/* ── Interactive Cultural Experiences ────────────────────────────────── */}
       <section className="mx-auto max-w-5xl px-4 py-16">
         <div className="mb-10 text-center">
           <h2 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-            What is Enkutatash?
+            Experience Enkutatash
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-neutral-600">
-            A celebration of culture, community, and a new beginning — rooted in
-            thousands of years of Ethiopian tradition.
+            Six ways to connect with Ethiopian New Year culture — send a flower,
+            find your Ethiopian birthday, test your knowledge, and more.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {CULTURAL_FACTS.map((fact) => (
-            <div
-              key={fact.title}
-              className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-xl">
-                {fact.emoji}
+
+        {/* Progress tracker (shows only after first interaction) */}
+        <ProgressTracker />
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Card 1 — Digital Flower */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-xl">🌸</div>
+              <div>
+                <h3 className="font-bold text-neutral-900">Send an Adey Abeba</h3>
+                <p className="text-xs text-neutral-500">Gift a digital bouquet</p>
               </div>
-              <h3 className="mt-3 font-semibold text-neutral-900">{fact.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-neutral-600">
-                {fact.body}
-              </p>
             </div>
-          ))}
+            <FlowerCard />
+          </div>
+
+          {/* Card 2 — Calendar converter */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-xl">🗓️</div>
+              <div>
+                <h3 className="font-bold text-neutral-900">Find Your Ethiopian Birthday</h3>
+                <p className="text-xs text-neutral-500">Convert to Ge&apos;ez calendar</p>
+              </div>
+            </div>
+            <CalendarCard />
+          </div>
+
+          {/* Card 3 — Quiz */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-xl">🧠</div>
+              <div>
+                <h3 className="font-bold text-neutral-900">Enkutatash Challenge</h3>
+                <p className="text-xs text-neutral-500">8-question culture quiz</p>
+              </div>
+            </div>
+            <QuizCard />
+          </div>
+
+          {/* Card 4 — Tradition Explorer */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-xl">📖</div>
+              <div>
+                <h3 className="font-bold text-neutral-900">Tradition Explorer</h3>
+                <p className="text-xs text-neutral-500">Discover 4 cultural stories</p>
+              </div>
+            </div>
+            <TraditionCard />
+          </div>
+
+          {/* Card 5 — Celebrate Near Me */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-xl">📍</div>
+              <div>
+                <h3 className="font-bold text-neutral-900">Celebrate Near Me</h3>
+                <p className="text-xs text-neutral-500">Events &amp; partners by city</p>
+              </div>
+            </div>
+            <NearMeCard businesses={nearMe.businesses} events={nearMe.events} />
+          </div>
+
+          {/* Card 6 — Greeting Vote */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-xl">🗣️</div>
+              <div>
+                <h3 className="font-bold text-neutral-900">Favourite Greeting</h3>
+                <p className="text-xs text-neutral-500">Vote &amp; share yours</p>
+              </div>
+            </div>
+            <GreetingCard />
+          </div>
         </div>
       </section>
 

@@ -244,6 +244,42 @@ model EnkutatashPhoto {
   @@index([status, createdAt])
 }
 
+// Shareable digital Adey Abeba bouquet (Card 1)
+model EnkutatashFlower {
+  id            String   @id @default(cuid())
+  senderName    String
+  recipientName String
+  message       String   @default("") @db.VarChar(200)
+  colour        String   @default("gold") // gold | white | pink | purple
+  shareToken    String   @unique @default(cuid())
+  createdAt     DateTime @default(now())
+
+  @@index([shareToken])
+}
+
+// Quiz leaderboard entries (Card 3)
+model EnkutatashQuizScore {
+  id        String   @id @default(cuid())
+  name      String   @default("Anonymous")
+  score     Int
+  total     Int      @default(8)
+  city      String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([score, createdAt])
+}
+
+// Greeting vote counts (Card 6)
+model EnkutatashGreetingVote {
+  id        String   @id @default(cuid())
+  greeting  String   // greeting key
+  sessionId String   // client-generated anonymous session id
+  createdAt DateTime @default(now())
+
+  @@unique([greeting, sessionId])
+  @@index([greeting])
+}
+
 model EventSource {
   id         String   @id @default(cuid())
   eventId    String
