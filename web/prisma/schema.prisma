@@ -231,6 +231,19 @@ model Event {
   @@index([sourceType, status])
 }
 
+// --- Enkutatash Community Photo Wall ---
+model EnkutatashPhoto {
+  id            String   @id @default(cuid())
+  submitterName String   @default("Community member")
+  imageUrl      String
+  caption       String   @default("")
+  city          String   @default("")
+  status        String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt     DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
 model EventSource {
   id         String   @id @default(cuid())
   eventId    String

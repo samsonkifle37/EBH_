@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireOwner, getOwnedBusiness } from "@/lib/ownerGuard";
 import { db } from "@/lib/db";
 import { trustV2ForBusiness } from "@/lib/trust";
@@ -163,6 +164,72 @@ export default async function OwnerBusiness({ params }: { params: Promise<{ id: 
           <p className="mt-1 text-sm text-amber-800">Download a ready-made profile card, Instagram story and QR poster — &ldquo;Proud member of Ethiopian Business Hub UK.&rdquo;</p>
         </Link>
       </div>
+
+      {/* ── Enkutatash Partner self-signup ─────────────────────────────────── */}
+      <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p className="font-semibold text-amber-900">🌸 Enkutatash Partner 2026</p>
+            <p className="mt-0.5 text-sm text-amber-800">
+              Get featured on the{" "}
+              <Link href="/enkutatash" className="underline hover:text-amber-900">Enkutatash page</Link>
+              {" "}with a 🌸 badge and optional special offer.
+            </p>
+          </div>
+          {business.enkutatashPartner && (
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 ring-1 ring-amber-300/70">
+              ✓ Partner
+            </span>
+          )}
+        </div>
+        <form
+          action={async (formData: FormData) => {
+            "use server";
+            const session = await requireOwner(`/owner/business/${id}`);
+            // Verify ownership before saving
+            const biz = await db.business.findUnique({ where: { id }, select: { ownerId: true, submittedById: true } });
+            if (!biz || (biz.ownerId !== session.userId && biz.submittedById !== session.userId)) return;
+            const partner = formData.get("partner") === "true";
+            const offer = (formData.get("offer") as string | null) ?? "";
+            await db.business.update({
+              where: { id },
+              data: { enkutatashPartner: partner, enkutatashOffer: offer.slice(0, 280) },
+            });
+            redirect(`/owner/business/${id}`);
+          }}
+          className="mt-4 space-y-3"
+        >
+          <label className="flex items-center gap-3 text-sm font-medium text-neutral-800">
+            <input
+              type="checkbox"
+              name="partner"
+              value="true"
+              defaultChecked={business.enkutatashPartner}
+              className="h-4 w-4 accent-amber-600"
+            />
+            Join as Enkutatash Partner 2026
+          </label>
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700">
+              Special offer <span className="font-normal text-neutral-400">(optional · max 280 chars)</span>
+            </label>
+            <textarea
+              name="offer"
+              defaultValue={business.enkutatashOffer ?? ""}
+              maxLength={280}
+              rows={2}
+              placeholder="e.g. Free injera starter with any main on Ethiopian New Year"
+              className="mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-600"
+          >
+            Save Enkutatash settings
+          </button>
+        </form>
+      </section>
 
       <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
         <p className="text-sm font-semibold text-emerald-900">Grow with EBH</p>

@@ -83,6 +83,14 @@ async function getEnkutatashPartners() {
   });
 }
 
+async function getApprovedPhotos() {
+  return db.enkutatashPhoto.findMany({
+    where: { status: "APPROVED" },
+    orderBy: { createdAt: "desc" },
+    take: 16,
+  });
+}
+
 async function getFeaturedFallback() {
   return db.business.findMany({
     where: { featured: true, status: "APPROVED" },
@@ -96,6 +104,7 @@ async function getFeaturedFallback() {
 
 export default async function EnkutatashPage() {
   const partners = await getEnkutatashPartners();
+  const communityPhotos = await getApprovedPhotos();
   // Fall back to featured businesses if no Enkutatash partners registered yet
   const fallbackBusinesses =
     partners.length === 0 ? await getFeaturedFallback() : [];
@@ -322,7 +331,7 @@ export default async function EnkutatashPage() {
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/contact"
+              href="/owner"
               className="inline-block rounded-xl bg-white px-6 py-3 text-sm font-bold text-emerald-900 shadow-lg transition hover:bg-emerald-50"
             >
               Register as Enkutatash Partner →
@@ -339,6 +348,68 @@ export default async function EnkutatashPage() {
           </p>
         </div>
       </section>
+
+      {/* ── Community Photo Wall ────────────────────────────────────────────── */}
+      {communityPhotos.length > 0 && (
+        <section className="mx-auto max-w-5xl px-4 py-16">
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+              Community moments 📸
+            </h2>
+            <p className="mt-2 text-sm text-neutral-500">
+              {communityPhotos.length} photo{communityPhotos.length !== 1 ? "s" : ""} from the community
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {communityPhotos.map((photo) => (
+              <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-2xl bg-neutral-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photo.imageUrl}
+                  alt={photo.caption || `Photo by ${photo.submitterName}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 transition group-hover:opacity-100">
+                  <p className="text-xs font-semibold text-white">{photo.submitterName}</p>
+                  {photo.city && <p className="text-[10px] text-white/70">{photo.city}</p>}
+                  {photo.caption && <p className="mt-0.5 text-[10px] italic text-white/80 line-clamp-2">{photo.caption}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 text-center">
+            <Link
+              href="/enkutatash/share-photo"
+              className="inline-flex items-center gap-2 rounded-xl border border-neutral-300 bg-white px-5 py-3 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-emerald-400 hover:text-emerald-700"
+            >
+              📷 Add your photo
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* ── Share-a-photo CTA (shown when wall is empty) ────────────────────── */}
+      {communityPhotos.length === 0 && (
+        <section className="mx-auto max-w-5xl px-4 py-16">
+          <div className="overflow-hidden rounded-3xl border-2 border-dashed border-amber-200 bg-amber-50/50 px-6 py-12 text-center">
+            <p className="text-4xl">📸</p>
+            <h2 className="mt-4 text-xl font-bold text-neutral-900">
+              Share your Enkutatash moment
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-neutral-600">
+              Upload a photo of your celebrations — family, food, flowers, or festivities.
+              Be the first to add to the community wall!
+            </p>
+            <Link
+              href="/enkutatash/share-photo"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#15613e] px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0f3d28]"
+            >
+              📷 Upload a photo
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* ── WhatsApp share ──────────────────────────────────────────────────── */}
       <section className="border-t border-neutral-100 bg-white py-12 text-center">

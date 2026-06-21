@@ -20,13 +20,23 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-3">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-4">
         {/* Brand */}
         <div>
           <Logo showTagline />
           <p className="mt-4 text-sm text-neutral-500">
             The verified home of Ethiopian businesses, events and community across the United Kingdom.
           </p>
+        </div>
+
+        {/* Community — hidden on mobile */}
+        <div className="hidden md:block">
+          <p className="text-sm font-semibold text-neutral-900">Community</p>
+          <ul className="mt-3 space-y-2 text-sm text-neutral-500">
+            <li><Link href="/enkutatash" className="hover:text-emerald-700">🌸 Enkutatash 2026</Link></li>
+            <li><Link href="/events" className="hover:text-emerald-700">Events</Link></li>
+            <li><Link href="/businesses" className="hover:text-emerald-700">Browse businesses</Link></li>
+          </ul>
         </div>
 
         {/* For businesses — hidden on mobile (accessible via bottom nav → For Businesses tab) */}
