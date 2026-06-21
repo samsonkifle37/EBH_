@@ -216,6 +216,9 @@ model Event {
   featured    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
+  // --- social proof ---
+  interestCount Int @default(0) // "I'm interested" taps (no auth required)
+
   // --- source tracking (real-data upgrade) ---
   sourceType String @default("admin_created") // owner_submitted | admin_created | demo
   sourceUrl  String @default("")

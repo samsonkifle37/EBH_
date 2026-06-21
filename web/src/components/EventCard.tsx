@@ -12,6 +12,7 @@ export interface EventSummary {
   startsAt: Date;
   priceFrom: number | null;
   ticketUrl: string;
+  interestCount?: number;
 }
 
 const DATE_FMT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -43,10 +44,17 @@ export default function EventCard({ event }: { event: EventSummary }) {
           {DATE_FMT.format(event.startsAt)} · {TIME_FMT.format(event.startsAt)}
         </p>
         <p className="text-sm text-neutral-500">📍 {event.venueName}, {cityLabel}</p>
-        <p className="mt-auto pt-2 text-sm font-semibold text-neutral-800">
-          {event.priceFrom === 0 || event.priceFrom === null ? "Free entry" : `From £${event.priceFrom}`}
-          <span className="ml-2 text-emerald-700 group-hover:underline">Get Tickets →</span>
-        </p>
+        <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+          <p className="text-sm font-semibold text-neutral-800">
+            {event.priceFrom === 0 || event.priceFrom === null ? "Free entry" : `From £${event.priceFrom}`}
+            <span className="ml-2 text-emerald-700 group-hover:underline">Get Tickets →</span>
+          </p>
+          {(event.interestCount ?? 0) > 0 && (
+            <span className="shrink-0 text-xs font-medium text-neutral-400">
+              🙋 {event.interestCount}
+            </span>
+          )}
+        </div>
       </div>
     </Link>
   );
