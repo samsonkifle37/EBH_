@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSession, hasRole } from "@/lib/session";
-import { NU_URL } from "@/lib/nu";
+import { NU_APP_STORE_URL } from "@/lib/nu";
 import SignOutButton from "@/components/SignOutButton";
 import SearchBar from "@/components/ui/SearchBar";
 import MobileMenu, { type NavSection, type MobileNavLink } from "@/components/MobileMenu";
@@ -80,7 +80,7 @@ export default async function Header() {
         {/* Right actions */}
         <div className="ml-auto flex items-center gap-2 md:ml-0">
           <a
-            href={NU_URL}
+            href={NU_APP_STORE_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="hidden rounded-xl bg-ink px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-ink-soft sm:inline-flex"
