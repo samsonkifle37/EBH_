@@ -1,5 +1,5 @@
 import { NU_URL, NU_PLAY_STORE_URL } from "@/lib/nu";
-import BrandMark from "@/components/BrandMark";
+import NuLogo from "@/components/NuLogo";
 
 const ETHIOPIAN_AIRLINES_URL = "https://www.ethiopianairlines.com/";
 // Public Google Flights search (no API / no scraping) — opens a flights search to Ethiopia.
@@ -28,7 +28,7 @@ export default function TravelAgenciesFeature() {
       {/* NU Discover Ethiopia — featured travel companion */}
       <article className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
         <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
-          <BrandMark tile className="h-16 w-16 shrink-0 rounded-2xl" />
+          <NuLogo className="h-16 w-16 shrink-0 rounded-2xl" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-bold text-ink">NU Discover Ethiopia</h2>
