@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { NU_URL, NU_APP_STORE_URL } from "@/lib/nu";
+import { NU_URL, NU_APP_STORE_URL, NU_PLAY_STORE_URL } from "@/lib/nu";
 import Logo from "@/components/Logo";
 
 export default function Footer() {
@@ -14,7 +14,7 @@ export default function Footer() {
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <a href={NU_APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-white px-4 py-2 font-semibold text-neutral-900 hover:bg-neutral-100">📱 App Store</a>
-            <span className="rounded-xl border border-neutral-700 px-4 py-2 font-medium text-neutral-400">🤖 Google Play — coming soon</span>
+            <a href={NU_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-white px-4 py-2 font-semibold text-neutral-900 hover:bg-neutral-100">🤖 Download on Google Play</a>
             <a href={NU_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-400 hover:text-emerald-300">🌐 nu-discoverethiopia.com</a>
           </div>
         </div>

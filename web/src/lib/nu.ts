@@ -8,5 +8,7 @@ export const NU_URL = process.env.NEXT_PUBLIC_NU_URL ?? "https://nu-discoverethi
 export const NU_APP_STORE_URL =
   process.env.NEXT_PUBLIC_NU_APP_STORE_URL ??
   "https://apps.apple.com/gb/app/nu-ethiopia/id6767019413";
-// Google Play is "coming soon" pre-launch.
-export const NU_PLAY_STORE_URL = process.env.NEXT_PUBLIC_NU_PLAY_STORE_URL ?? "";
+// NU is live on Google Play.
+export const NU_PLAY_STORE_URL =
+  process.env.NEXT_PUBLIC_NU_PLAY_STORE_URL ??
+  "https://play.google.com/store/apps/details?id=com.nuethiopia.app&pcampaignid=web_share";

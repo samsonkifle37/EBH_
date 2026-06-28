@@ -6,6 +6,7 @@ import BusinessCard from "@/components/BusinessCard";
 import FilterBar from "@/components/FilterBar";
 import AdSlot from "@/components/AdSlot";
 import EmptyState from "@/components/EmptyState";
+import TravelAgenciesFeature from "@/components/TravelAgenciesFeature";
 import { CATEGORY_LABELS, CITY_LABELS, isCategory, isCity, type Category, type City } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -42,12 +43,22 @@ export default async function BusinessesPage({ searchParams }: Props) {
   const cityLabel = params.city && isCity(params.city) ? CITY_LABELS[params.city as City] : null;
   const heading = [categoryLabel ?? "Ethiopian Businesses", cityLabel ? `in ${cityLabel}` : "across the UK"].join(" ");
 
+  // Travel Agencies gets curated Ethiopia-travel discovery (NU, cheap tickets,
+  // Ethiopian Airlines) so the category is never an empty dead-end.
+  const isTravel = params.category === "travel-agencies";
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{heading}</h1>
       <p className="mt-1 text-sm text-neutral-500">
-        {results.length} {results.length === 1 ? "business" : "businesses"} found
-        {params.q ? ` for “${params.q}”` : ""}
+        {isTravel && results.length === 0 ? (
+          "Discover trusted Ethiopia travel — flights, agencies and booking links."
+        ) : (
+          <>
+            {results.length} {results.length === 1 ? "business" : "businesses"} found
+            {params.q ? ` for “${params.q}”` : ""}
+          </>
+        )}
       </p>
 
       <div className="mt-6">
@@ -56,11 +67,7 @@ export default async function BusinessesPage({ searchParams }: Props) {
         </Suspense>
       </div>
 
-      {results.length === 0 ? (
-        <div className="mt-8">
-          <EmptyState title="No businesses match those filters" hint="Try removing a filter or searching a different city." />
-        </div>
-      ) : (
+      {results.length > 0 && (
         <>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {results.slice(0, 3).map((b) => (
@@ -76,6 +83,14 @@ export default async function BusinessesPage({ searchParams }: Props) {
             ))}
           </div>
         </>
+      )}
+
+      {isTravel && <TravelAgenciesFeature />}
+
+      {results.length === 0 && !isTravel && (
+        <div className="mt-8">
+          <EmptyState title="No businesses match those filters" hint="Try removing a filter or searching a different city." />
+        </div>
       )}
     </main>
   );
